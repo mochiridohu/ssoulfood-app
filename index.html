@@ -1873,9 +1873,9 @@
                 await saveOrdersBucket(key, orders);
                 await updateOrdersList();
 
-                let msg = `✅ ${addCount}개 발주가 추가되었습니다.`;
+                let msg = `[완료] ${addCount}개 발주가 추가되었습니다.`;
                 if (failedRows.length > 0) {
-                    msg += `\n\n⚠️ 아래 ${failedRows.length}개 항목은 상품 관리에 등록되지 않은 상품코드라 제외됐어요:\n${failedRows.slice(0, 20).join('\n')}`;
+                    msg += `\n\n[주의] 아래 ${failedRows.length}개 항목은 상품 관리에 등록되지 않은 상품코드라 제외됐어요:\n${failedRows.slice(0, 20).join('\n')}`;
                     if (failedRows.length > 20) msg += `\n... 외 ${failedRows.length - 20}개`;
                 }
                 alert(msg);
@@ -2759,7 +2759,7 @@
                                     <td style="padding: 0; border-left: 1px solid #d1d5db; border-right: 1px solid #d1d5db; border-top: none; border-bottom: none; background: ${dealerBg};"></td>
                                     <td colspan="6" style="padding: 6px 12px; border: 1px solid #fcd34d; border-left: 4px solid #f59e0b;">
                                         <div style="display: flex; align-items: center; gap: 8px;">
-                                            <span style="font-size: 11px; font-weight: 700; color: #92400e; white-space: nowrap;">📦 세트 구성</span>
+                                            <span style="font-size: 11px; font-weight: 700; color: #92400e; white-space: nowrap;">[박스] 세트 구성</span>
                                             <input type="text" id="memo_input_${uniqueId}"
                                                 placeholder="예) 소스 31.32kg + 만능소스 4.35kg"
                                                 style="flex: 1; padding: 4px 8px; border: 1px solid #fcd34d; border-radius: 4px; font-size: 12px; background: white;">
@@ -2855,8 +2855,8 @@
                             <div style="font-weight: 600; color: #d97706; margin-bottom: 10px;">세트 구성</div>
                             <textarea id="detail_${uniqueId}" style="width: 100%; min-height: 60px; padding: 10px; border: 1px solid #ffc107; border-radius: 4px; background: white; font-size: 12px; font-family: Arial, sans-serif; box-sizing: border-box;" placeholder="예) 소스 31.32kg + 만능소스 4.35kg"></textarea>
                             <div style="margin-top: 10px; display: flex; gap: 10px;">
-                                <button onclick="saveShippingDetail('${uniqueId}', '${storageKey}', ${orderIdx})" style="padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">💾 저장</button>
-                                <button onclick="cancelShippingComposition('${uniqueId}')" style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">✕ 취소</button>
+                                <button onclick="saveShippingDetail('${uniqueId}', '${storageKey}', ${orderIdx})" style="padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">[저장] 저장</button>
+                                <button onclick="cancelShippingComposition('${uniqueId}')" style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">X 취소</button>
                             </div>
                         </td>
                     `;
@@ -3449,7 +3449,7 @@
                     </td>
                     <td style="padding:10px 14px;text-align:right;color:#ef4444;font-size:13px;" id="pnl_incentive_${idx}">${incentive>0?'-₩'+incentive.toLocaleString():'<span style="color:#d1d5db;">-</span>'}</td>
                     <td style="padding:10px 14px;text-align:right;font-weight:700;font-size:14px;color:#065f46;" id="pnl_net_${idx}">₩${net.toLocaleString()}</td>
-                    <td style="padding:6px 10px;text-align:center;"><button onclick="deletePnlRow('revenue',${idx})" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:15px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">✕</button></td>
+                    <td style="padding:6px 10px;text-align:center;"><button onclick="deletePnlRow('revenue',${idx})" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:15px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">X</button></td>
                 </tr>`;
             }).join('');
         }
@@ -3471,7 +3471,7 @@
                 return `<tr style="border-bottom:1px solid ${borderColor};${bg}">
                     <td style="padding:10px 14px;">${nameCell}</td>
                     <td style="padding:10px 14px;text-align:right;"><input type="text" value="${row.amount.toLocaleString()}" data-type="${type}" data-idx="${idx}" data-field="amount" oninput="formatPnlInput(this)" onchange="formatPnlInput(this)" style="border:none;background:transparent;font-size:13px;text-align:right;outline:none;width:100%;color:${textColor};font-weight:600;"></td>
-                    <td style="padding:6px 10px;text-align:center;"><button onclick="deletePnlRow('${type}',${idx})" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:15px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">✕</button></td>
+                    <td style="padding:6px 10px;text-align:center;"><button onclick="deletePnlRow('${type}',${idx})" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:15px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">X</button></td>
                 </tr>`;
             }).join('');
         }
@@ -3589,7 +3589,7 @@
                     <div style="font-size:11px;color:#9ca3af;margin-top:3px;">이익률 ${margin}%</div>
                 </div>
                 <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:10px;padding:16px 22px;min-width:140px;border-top:3px solid #d97706;box-shadow:0 1px 6px rgba(0,0,0,0.06);">
-                    <div style="font-size:11px;color:#92400e;margin-bottom:4px;">💡 부가세 예상 (10%)</div>
+                    <div style="font-size:11px;color:#92400e;margin-bottom:4px;">[!] 부가세 예상 (10%)</div>
                     <div style="font-size:18px;font-weight:700;color:#d97706;">₩${vat.toLocaleString()}</div>
                     <div style="font-size:10px;color:#a16207;margin-top:3px;">세후 순이익 ₩${afterTax.toLocaleString()}</div>
                 </div>
@@ -3611,7 +3611,7 @@
                     <td style="padding:10px 14px;text-align:center;"><select data-field="rate" onchange="recalcRevenueRow(this,'${uid}')" style="border:1px solid #a7f3d0;border-radius:5px;padding:4px 8px;font-size:12px;background:white;cursor:pointer;color:#065f46;font-weight:600;"><option value="0">0%</option><option value="0.02">2%</option><option value="0.05">5%</option><option value="0.06">6%</option><option value="0.10">10%</option></select></td>
                     <td style="padding:10px 14px;text-align:right;color:#ef4444;" id="pnl_incentive_${uid}"><span style="color:#d1d5db;">-</span></td>
                     <td style="padding:10px 14px;text-align:right;font-weight:700;font-size:14px;color:#065f46;" id="pnl_net_${uid}">₩0</td>
-                    <td style="padding:6px 10px;text-align:center;"><button onclick="this.closest('tr').remove();updatePnlSummary();" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:15px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">✕</button></td>`;
+                    <td style="padding:6px 10px;text-align:center;"><button onclick="this.closest('tr').remove();updatePnlSummary();" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:15px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">X</button></td>`;
                 body.appendChild(tr);
             } else {
                 const bc = type==='cost'?'#fde68a':'#fecaca';
@@ -3622,7 +3622,7 @@
                 tr.innerHTML = `
                     <td style="padding:10px 14px;"><input type="text" placeholder="${label}" data-type="${type}" data-field="name" style="width:100%;border:none;background:transparent;font-size:13px;outline:none;color:#374151;"></td>
                     <td style="padding:10px 14px;text-align:right;"><input type="text" value="0" data-type="${type}" data-field="amount" oninput="formatPnlInput(this)" onchange="formatPnlInput(this)" style="width:100%;border:none;background:transparent;font-size:13px;text-align:right;outline:none;color:${tc};font-weight:600;"></td>
-                    <td style="padding:6px 10px;text-align:center;"><button onclick="this.closest('tr').remove();updatePnlSummary();" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:15px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">✕</button></td>`;
+                    <td style="padding:6px 10px;text-align:center;"><button onclick="this.closest('tr').remove();updatePnlSummary();" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:15px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">X</button></td>`;
                 body.appendChild(tr);
             }
             body.querySelector('tr:last-child input').focus();
@@ -4141,13 +4141,13 @@ window.onload = function() { setTimeout(function() { window.print(); }, 600); };
             
             const progressEl = document.getElementById('bulkDownloadProgress');
             progressEl.style.display = 'block';
-            progressEl.innerHTML = `⏳ ${dealerList.length}개 거래처 인쇄창을 순서대로 엽니다. 각 창에서 대상을 "PDF로 저장"으로 선택하세요.`;
+            progressEl.innerHTML = `[처리중] ${dealerList.length}개 거래처 인쇄창을 순서대로 엽니다. 각 창에서 대상을 "PDF로 저장"으로 선택하세요.`;
             
             await new Promise(r => setTimeout(r, 600));
             
             for (let i = 0; i < dealerList.length; i++) {
                 const dealerName = dealerList[i];
-                progressEl.innerHTML = `⏳ (${i + 1}/${dealerList.length}) <strong>${dealerName}</strong> 인쇄창 여는 중...`;
+                progressEl.innerHTML = `[처리중] (${i + 1}/${dealerList.length}) <strong>${dealerName}</strong> 인쇄창 여는 중...`;
                 
                 const statementHtml = buildStatementHtml(dealerName, startDate, endDate);
                 if (!statementHtml) continue;
@@ -4158,7 +4158,7 @@ window.onload = function() { setTimeout(function() { window.print(); }, 600); };
                 await new Promise(r => setTimeout(r, 1500));
             }
             
-            progressEl.innerHTML = `✅ ${dealerList.length}개 인쇄창 열기 완료! 각 창에서 PDF로 저장하세요.`;
+            progressEl.innerHTML = `[완료] ${dealerList.length}개 인쇄창 열기 완료! 각 창에서 PDF로 저장하세요.`;
             setTimeout(() => { progressEl.style.display = 'none'; }, 6000);
         }
         
@@ -4498,7 +4498,7 @@ window.onload = function() { setTimeout(function() { window.print(); }, 600); };
                     document.getElementById('productCount').textContent = allProducts.length;
 
                     hideLoading();
-                    alert(`✅ 업로드 완료!\n- 상품: ${productCount}개\n- 거래처: ${dealerCount}개\n- 발주: ${orderCount}건 (${bucketCount}개 버킷)`);
+                    alert(`[완료] 업로드 완료!\n- 상품: ${productCount}개\n- 거래처: ${dealerCount}개\n- 발주: ${orderCount}건 (${bucketCount}개 버킷)`);
 
                 } catch(err) {
                     hideLoading();
@@ -4564,7 +4564,7 @@ window.onload = function() { setTimeout(function() { window.print(); }, 600); };
                 updateDealerSelect();
 
                 hideLoading();
-                alert(`✅ 이전 완료!\n- 상품: ${localProducts.length}개\n- 거래처: ${localDealers.length}개\n- 발주: ${orderCount}건\n- 발주 버킷: ${orderKeys.length}개`);
+                alert(`[완료] 이전 완료!\n- 상품: ${localProducts.length}개\n- 거래처: ${localDealers.length}개\n- 발주: ${orderCount}건\n- 발주 버킷: ${orderKeys.length}개`);
 
             } catch(e) {
                 hideLoading();
