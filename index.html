@@ -1588,6 +1588,15 @@
             });
         }
         
+        function escHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function switchTab(tabName) {
             document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
@@ -1662,9 +1671,9 @@
             
             list.innerHTML = filtered.map((p, idx) => `
                 <div class="product-item" data-pidx="${allProducts.indexOf(p)}">
-                    <div class="product-code">${p.code}</div>
-                    <div class="product-name">${p.name}</div>
-                    <div class="product-spec">${p.spec} | ₩${p.price.toLocaleString()}</div>
+                    <div class="product-code">${escHtml(p.code)}</div>
+                    <div class="product-name">${escHtml(p.name)}</div>
+                    <div class="product-spec">${escHtml(p.spec)} | ₩${p.price.toLocaleString()}</div>
                 </div>
             `).join('');
 
@@ -1700,9 +1709,9 @@
                 const actualIdx = allProducts.indexOf(p);
                 html += `
                     <tr>
-                        <td>${p.code}</td>
-                        <td>${p.name}</td>
-                        <td>${p.spec}</td>
+                        <td>${escHtml(p.code)}</td>
+                        <td>${escHtml(p.name)}</td>
+                        <td>${escHtml(p.spec)}</td>
                         <td>${p.detailSpec || '-'}</td>
                         <td class="amount">₩${p.cost.toLocaleString()}</td>
                         <td class="amount">₩${p.price.toLocaleString()}</td>
@@ -1789,7 +1798,7 @@
                 const dayOfWeek = dayNames[date.getDay()];
                 const isSet = order.detailSpec && order.detailSpec.trim() !== '';
                 const productType = isSet ? '세트' : '단품';
-                csv += `${order.shippingDate},${dayOfWeek},${order.dealer},${order.brand},${productType},${order.product},"${order.spec || ''}","${order.detailSpec || ''}",${order.qty},${order.school}\n`;
+                csv += `${order.shippingDate},${dayOfWeek},${order.dealer},${order.brand},${productType},${escHtml(order.product)},"${order.spec || ''}","${order.detailSpec || ''}",${order.qty},${order.school}\n`;
             });
             downloadCSV(csv, `쏘울푸드_배송표_${startDate}_${endDate}.csv`);
         }
@@ -2339,8 +2348,8 @@
                         <td>${order.dealer}</td>
                         <td>${order.brand}</td>
                         <td>${order.code}</td>
-                        <td>${order.product}</td>
-                        <td>${order.spec}</td>
+                        <td>${escHtml(order.product)}</td>
+                        <td>${escHtml(order.spec)}</td>
                         <td>${order.detailSpec || '-'}</td>
                         <td class="amount">${order.qty}</td>
                         <td class="amount">₩${(order.cost || 0).toLocaleString()}</td>
@@ -2768,7 +2777,7 @@
                                 <tr style="background: ${dealerBg};" id="row_${uniqueId}">
                                     <td style="padding: 7px 10px; border-left: 1px solid #d1d5db; border-right: 1px solid #d1d5db; border-top: ${borderTop}; border-bottom: ${borderBottom}; font-weight: 700; font-size: 12px; vertical-align: middle; background: ${dealerBg};">${dealerCellContent}</td>
                                     <td style="padding: 7px 10px; border: 1px solid #d1d5db; font-size: 11px; color: #555;">${order.brand || '-'}</td>
-                                    <td style="padding: 7px 10px; border: 1px solid #d1d5db; font-weight: 500;">${order.product}</td>
+                                    <td style="padding: 7px 10px; border: 1px solid #d1d5db; font-weight: 500;">${escHtml(order.product)}</td>
                                     <td style="padding: 7px 10px; border: 1px solid #d1d5db; font-size: 11px; color: #555;">${order.spec || '-'}</td>
                                     <td style="padding: 7px 10px; border: 1px solid #d1d5db; text-align: center; font-weight: 700; font-size: 14px;">${order.qty}</td>
                                     <td style="padding: 7px 10px; border: 1px solid #d1d5db; text-align: center;">
@@ -4384,7 +4393,7 @@ window.onload = function() { setTimeout(function() { window.print(); }, 600); };
                 const bodyRows = pageRows.map(r => `
                     <tr>
                         ${td(r.order.shippingDate.replace(/-/g,'/'), 'white-space:nowrap;text-align:center;')}
-                        ${td(`${r.order.product} [${r.order.spec}]`)}
+                        ${td(`${escHtml(r.order.product)} [${escHtml(r.order.spec)}]`)}
                         ${td(r.price.toLocaleString(), 'text-align:right;white-space:nowrap;')}
                         ${td(r.qty, 'text-align:right;')}
                         ${td(r.supply.toLocaleString(), 'text-align:right;white-space:nowrap;')}
