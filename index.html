@@ -372,6 +372,116 @@
                 page-break-inside: avoid;
             }
         }
+
+        /* ========================
+           모바일 반응형
+        ======================== */
+        @media (max-width: 768px) {
+            .header { padding: 20px 16px; }
+            .header h1 { font-size: 22px; }
+            .header p { font-size: 12px; }
+            .header button[onclick="logout()"] {
+                position: static !important;
+                display: block;
+                margin: 10px auto 0;
+                font-size: 11px;
+            }
+
+            .container { padding: 12px; }
+
+            /* 탭 버튼 - 스크롤 가능하게 */
+            .tabs {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                gap: 6px;
+                margin-bottom: 16px;
+                padding-bottom: 4px;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            .tabs::-webkit-scrollbar { display: none; }
+            .tab-btn {
+                padding: 8px 14px;
+                font-size: 12px;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            .section { padding: 16px; }
+            .section-title { font-size: 16px; margin-bottom: 16px; }
+
+            /* form-grid 1열로 */
+            .form-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* 버튼 풀 너비 */
+            .btn { font-size: 13px; padding: 10px 16px; }
+
+            /* 테이블 가로 스크롤 */
+            .table-wrapper {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            table { min-width: 600px; font-size: 12px; }
+            th, td { padding: 8px 10px !important; }
+
+            /* 요약 카드 */
+            .stats { grid-template-columns: 1fr 1fr !important; gap: 8px; }
+            .stat-card { padding: 12px 14px; }
+            .stat-value { font-size: 18px !important; }
+
+            /* 모달 */
+            .modal-content {
+                width: 95% !important;
+                max-width: 95% !important;
+                padding: 20px 16px;
+                margin: 20px auto;
+            }
+
+            /* 2열 그리드 → 1열 */
+            div[style*="grid-template-columns:1fr 1fr"],
+            div[style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* 발주 기록 요약 카드 */
+            #ordersSummary {
+                gap: 8px !important;
+            }
+            #ordersSummary > div {
+                min-width: 100px !important;
+                padding: 10px 14px !important;
+            }
+
+            /* 손익관리 2열 → 1열 */
+            #pnl .section > div[style*="grid"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* 배송표 A4 너비 조정 */
+            #shippingA4 { width: 100% !important; }
+
+            /* 원장 발송 2열 → 1열 */
+            #mailsend div[style*="grid"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* 로그인 화면 */
+            #loginScreen > div {
+                padding: 32px 24px !important;
+                margin: 16px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 { font-size: 18px; }
+            .stats { grid-template-columns: 1fr !important; }
+            .tab-btn { padding: 7px 12px; font-size: 11px; }
+            table { font-size: 11px; }
+            th, td { padding: 6px 8px !important; }
+        }
     </style>
 </head>
 <body>
@@ -1525,13 +1635,21 @@
                 p.spec.includes(query)
             ).slice(0, 20);
             
-            list.innerHTML = filtered.map(p => `
-                <div class="product-item" onclick="selectProduct('${p.code}', '${p.name}', ${p.price}, '${p.spec}', '${p.detailSpec || ''}', ${p.cost || 0})">
+            list.innerHTML = filtered.map((p, idx) => `
+                <div class="product-item" data-pidx="${allProducts.indexOf(p)}">
                     <div class="product-code">${p.code}</div>
                     <div class="product-name">${p.name}</div>
                     <div class="product-spec">${p.spec} | ₩${p.price.toLocaleString()}</div>
                 </div>
             `).join('');
+
+            // 클릭 이벤트 - data 속성으로 처리 (특수문자 안전)
+            list.querySelectorAll('.product-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const p = allProducts[parseInt(el.dataset.pidx)];
+                    if (p) selectProduct(p.code, p.name, p.price, p.spec, p.detailSpec || '', p.cost || 0);
+                });
+            });
         }
         
         function selectProduct(code, name, price, spec, detailSpec, cost) {
@@ -1938,13 +2056,20 @@
                 d.name.includes(query)
             );
             
-            list.innerHTML = filtered.map(d => `
-                <div class="product-item" onclick="selectDealer('${d.name}')">
+            list.innerHTML = filtered.map((d, idx) => `
+                <div class="product-item" data-didx="${allDealers.indexOf(d)}">
                     <div class="product-code">${d.bizNo || '-'}</div>
                     <div class="product-name">${d.name}</div>
                     <div class="product-spec">${d.ceo || ''} | ${d.phone || ''}</div>
                 </div>
             `).join('');
+
+            list.querySelectorAll('.product-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const d = allDealers[parseInt(el.dataset.didx)];
+                    if (d) selectDealer(d.name);
+                });
+            });
         }
         
         function selectDealer(name) {
@@ -2797,10 +2922,10 @@
 
         function getMonthlyIncentiveRate(dealerName, year, month) {
             const monthlyKey = getMonthlyIncentiveKey(dealerName, year, month);
-            // 월별 저장값 우선, 없으면 기존 전역값 fallback
+            // 해당 월 저장값 우선, 없으면 0
             const monthly = incentiveRates[monthlyKey];
-            if (monthly !== undefined) return parseFloat(monthly);
-            return parseFloat(incentiveRates[dealerName] || 0);
+            if (monthly !== undefined && monthly !== null) return parseFloat(monthly);
+            return 0;
         }
 
         async function saveSummaryIncentives() {
@@ -2809,10 +2934,9 @@
             document.querySelectorAll('[data-incentive-dealer]').forEach(sel => {
                 const dealer = sel.dataset.incentiveDealer;
                 const rate = parseFloat(sel.value) || 0;
+                // 월별 키만 저장 (전역값 덮어쓰기 제거)
                 const monthlyKey = getMonthlyIncentiveKey(dealer, year, month);
                 incentiveRates[monthlyKey] = rate;
-                // 전역값도 업데이트 (손익관리 등 다른 탭 호환)
-                incentiveRates[dealer] = rate;
             });
             await saveIncentiveRatesDB(incentiveRates);
             generateSummary();
