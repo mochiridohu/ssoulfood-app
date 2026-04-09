@@ -4,7 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>쏘울푸드 완전 자동화 ERP v4</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script>
+        // Supabase 동적 로드
+        window._supabaseReady = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js';
+            s.onload = () => resolve();
+            s.onerror = () => {
+                // fallback: unpkg
+                const s2 = document.createElement('script');
+                s2.src = 'https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js';
+                s2.onload = () => resolve();
+                s2.onerror = () => reject(new Error('Supabase CDN 로드 실패'));
+                document.head.appendChild(s2);
+            };
+            document.head.appendChild(s);
+        });
+    </script>
     <style>
         * {
             margin: 0;
@@ -1300,6 +1316,15 @@
         let db;
 
         async function initSupabase() {
+            try {
+                await window._supabaseReady;
+            } catch(e) {
+                alert('Supabase 라이브러리 로드 실패. 인터넷 연결을 확인하고 새로고침 해주세요.');
+                throw e;
+            }
+            if (!window.supabase) {
+                throw new Error('window.supabase 없음');
+            }
             const { createClient } = window.supabase;
             db = createClient(SUPABASE_URL, SUPABASE_KEY);
         }
