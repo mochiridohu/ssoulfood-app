@@ -1308,7 +1308,7 @@
         // DB 헬퍼 함수들
         // ========================
 
-        // orders 버킷 키 → DB 저장/로드
+        // orders 버킷 키 -> DB 저장/로드
         async function loadOrdersBucket(bucketKey) {
             const { data, error } = await db
                 .from('orders')
@@ -1522,11 +1522,11 @@
             // 기존 세션 확인
             const { data: { session } } = await db.auth.getSession();
             if (session) {
-                // 로그인 상태 → 바로 ERP 로드
+                // 로그인 상태 -> 바로 ERP 로드
                 showERP();
                 await initializeApp();
             } else {
-                // 비로그인 → 로그인 화면
+                // 비로그인 -> 로그인 화면
                 document.getElementById('loginScreen').style.display = 'flex';
             }
         });
@@ -1730,7 +1730,7 @@
         
         function downloadOrdersTemplate() {
             const csv = '급식일자,거래처,브랜드,상품코드,상품명,규격,상세규격,수량,입고단가,출고단가,학교명,비고\n' +
-                '2026-03-01,경호푸드시스템,SCH,26년1학기_SCH1,심플로트 냉동구운 통감자,2270g(170g×33개),냉동,10,15400,19740,옥정초,선발주';
+                '2026-03-01,경호푸드시스템,SCH,26년1학기_SCH1,심플로트 냉동구운 통감자,2270g(170gx33개),냉동,10,15400,19740,옥정초,선발주';
             downloadCSV(csv, '쏘울푸드_발주템플릿.csv');
         }
 
@@ -1790,7 +1790,7 @@
                 text = text.replace(/\r\n/g, '\n');
                 const rows = parseCSV(text);
                 
-                // 쉼표 포함된 숫자 파싱 헬퍼 (예: "43,500" → 43500)
+                // 쉼표 포함된 숫자 파싱 헬퍼 (예: "43,500" -> 43500)
                 const parseNum = (val) => parseFloat((val || '').replace(/,/g, '')) || 0;
                 
                 allProducts = [];
@@ -2573,7 +2573,7 @@
                 const target = document.getElementById('shippingA4') || element;
                 const replacements = [];
 
-                // select → span으로 교체
+                // select -> span으로 교체
                 target.querySelectorAll('select').forEach(sel => {
                     const span = document.createElement('span');
                     span.textContent = sel.value;
@@ -2583,7 +2583,7 @@
                     replacements.push({ el: sel, span });
                 });
 
-                // input → span으로 교체
+                // input -> span으로 교체
                 target.querySelectorAll('input[type="text"]').forEach(inp => {
                     const span = document.createElement('span');
                     span.textContent = inp.value || '';
@@ -3750,11 +3750,11 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td style="padding:8px 20px 8px 10px; border:1px solid #d1d5db; white-space:nowrap;">${deadlineStr} 이전 입금 (장려금 有)</td>
+                            <td style="padding:8px 20px 8px 10px; border:1px solid #d1d5db; white-space:nowrap;">${deadlineStr} 이전 입금 (장려금 &#x6709;)</td>
                             <td style="padding:8px 20px 8px 10px; border:1px solid #d1d5db; text-align:right; font-weight:700;">₩${withIncentive.toLocaleString()}</td>
                         </tr>
                         <tr style="background:#fafafa;">
-                            <td style="padding:8px 20px 8px 10px; border:1px solid #d1d5db; white-space:nowrap;">${deadlineStr} 이후 입금 (장려금 無)</td>
+                            <td style="padding:8px 20px 8px 10px; border:1px solid #d1d5db; white-space:nowrap;">${deadlineStr} 이후 입금 (장려금 &#x7121;)</td>
                             <td style="padding:8px 20px 8px 10px; border:1px solid #d1d5db; text-align:right; font-weight:700; color:#6b7280;">₩${noIncentive.toLocaleString()}</td>
                         </tr>
                     </tbody>
@@ -3763,7 +3763,7 @@
                 <p style="font-weight:700; margin:0 0 6px;">[ 입금 계좌 ]</p>
                 <p style="margin:0 0 20px;">카카오뱅크&nbsp; 3333-27-9721031 / 쏘울푸드</p>
 
-                <p style="font-weight:700; margin:0 0 6px;">[※ 입금 장려금 정책]</p>
+                <p style="font-weight:700; margin:0 0 6px;">[* 입금 장려금 정책]</p>
                 <table style="border-collapse:collapse; font-size:13px; margin-bottom:20px;">
                     <tbody>${policyRows}</tbody>
                 </table>
@@ -3845,7 +3845,7 @@
             const isEditing = editArea.style.display !== 'none';
 
             if (isEditing) {
-                // 편집 → 미리보기 전환: textarea 내용을 HTML로 업데이트
+                // 편집 -> 미리보기 전환: textarea 내용을 HTML로 업데이트
                 const lines = editArea.value.split('\n');
                 const htmlContent = lines.map(line =>
                     line.trim() === '' ? '<br>' : `<p style="margin:0;">${line}</p>`
@@ -3858,7 +3858,7 @@
                 btn.style.color = '#667eea';
                 btn.style.borderColor = '#667eea';
             } else {
-                // 미리보기 → 편집 전환: 현재 텍스트를 textarea에
+                // 미리보기 -> 편집 전환: 현재 텍스트를 textarea에
                 editArea.value = preview.innerText;
                 editArea.style.display = 'block';
                 preview.style.display = 'none';
@@ -4108,7 +4108,7 @@ window.onload = function() { setTimeout(function() { window.print(); }, 600); };
             openPrintWindow(previewHtml, fileName);
         }
         
-        // 전체 거래처 일괄 — 거래처별 인쇄창 순차 오픈
+        // 전체 거래처 일괄 - 거래처별 인쇄창 순차 오픈
         async function downloadAllStatements() {
             const startDate = document.getElementById('statementStartDate').value;
             const endDate = document.getElementById('statementEndDate').value;
@@ -4258,7 +4258,7 @@ window.onload = function() { setTimeout(function() { window.print(); }, 600); };
                                     <table style="width:100%;border-collapse:collapse;">
                                         <tr>
                                             <td style="padding:2mm 3mm;background:#e8e8e8;font-weight:bold;width:30%;border-bottom:0.5px solid #ccc;border-right:0.5px solid #ccc;border-left:0.5px solid #ccc;">거래처</td>
-                                            <td style="padding:2mm 3mm;font-size:13px;font-weight:bold;border-bottom:0.5px solid #ccc;">${dealer.name} 貴 中</td>
+                                            <td style="padding:2mm 3mm;font-size:13px;font-weight:bold;border-bottom:0.5px solid #ccc;">${dealer.name} &#x8CB4; &#x4E2D;</td>
                                         </tr>
                                         <tr>
                                             <td style="padding:2mm 3mm;background:#e8e8e8;font-weight:bold;border-bottom:0.5px solid #ccc;border-right:0.5px solid #ccc;border-left:0.5px solid #ccc;">주소</td>
@@ -4274,7 +4274,7 @@ window.onload = function() { setTimeout(function() { window.print(); }, 600); };
                                         </tr>
                                         <tr style="background:#f0f0f0;">
                                             <td colspan="2" style="padding:2.5mm 3mm;border-left:0.5px solid #ccc;font-weight:bold;font-size:12px;text-align:center;">
-                                                금 액 : ${koreanAmount}원정 (￦${finalAmount.toLocaleString()})
+                                                금 액 : ${koreanAmount}원정 (₩${finalAmount.toLocaleString()})
                                             </td>
                                         </tr>
                                     </table>
