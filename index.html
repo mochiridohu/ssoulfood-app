@@ -623,6 +623,37 @@
                         <button class="btn btn-primary" onclick="downloadOrdersTemplate()" style="width: 100%;">📥 템플릿</button>
                     </div>
                 </div>
+
+                <!-- 검색/필터/정렬 -->
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:flex-end;">
+                    <div style="flex:1; min-width:200px;">
+                        <label class="form-label">검색</label>
+                        <input type="text" id="ordersSearch" placeholder="상품명, 거래처, 학교명, 코드..." oninput="renderOrdersTable()" style="width:100%;">
+                    </div>
+                    <div style="min-width:130px;">
+                        <label class="form-label">거래처 필터</label>
+                        <select id="ordersDealerFilter" onchange="renderOrdersTable()" style="width:100%;">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div style="min-width:120px;">
+                        <label class="form-label">브랜드 필터</label>
+                        <select id="ordersBrandFilter" onchange="renderOrdersTable()" style="width:100%;">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div style="min-width:120px;">
+                        <label class="form-label">정렬</label>
+                        <select id="ordersSort" onchange="renderOrdersTable()" style="width:100%;">
+                            <option value="date_asc">날짜 오름차순</option>
+                            <option value="date_desc">날짜 내림차순</option>
+                            <option value="dealer">거래처순</option>
+                            <option value="product">상품명순</option>
+                            <option value="supply_desc">출고가 높은순</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="resetOrdersFilter()" style="background:#f3f4f6; color:#374151; height:38px;">초기화</button>
+                </div>
                 
                 <div style="margin-bottom: 20px;">
                     <input type="file" id="ordersUpload" accept=".csv" style="display: none;" onchange="importOrders()">
@@ -2322,17 +2353,18 @@
             alert('발주가 추가되었습니다');
         }
         
+        // 발주 목록 전체 데이터 (필터/정렬용)
+        window._allFilteredOrders = [];
+
         async function updateOrdersList() {
             const yearValue = document.getElementById('ordersYear').value;
             const monthValue = document.getElementById('ordersMonth').value;
-            
-            const year = parseInt(yearValue.replace('년', ''));
-            const month = parseInt(monthValue.replace('월', ''));
-            
-            // 급식일자 기준 필터링: YYYY-MM 형태로 비교
-            const targetYearMonth = `${year}-${String(month).padStart(2, '0')}`;
-            
-            // 모든 저장 버킷에서 급식일자가 해당 연/월인 발주만 추출
+            if (!monthValue) return;
+
+            const yearNum = parseInt(yearValue.replace('년', ''));
+            const monthNum = parseInt(monthValue.replace('월', ''));
+            const targetYearMonth = `${yearNum}-${String(monthNum).padStart(2, '0')}`;
+
             const filteredOrders = [];
             for (let y = 2025; y <= 2030; y++) {
                 for (let m = 1; m <= 12; m++) {
@@ -2345,71 +2377,157 @@
                     });
                 }
             }
-            
-            // 급식일자 오름차순 정렬
             filteredOrders.sort((a, b) => a.shippingDate.localeCompare(b.shippingDate));
+            window._allFilteredOrders = filteredOrders;
 
-            // 합계 계산
-            let sumQty = 0, sumCost = 0, sumSupply = 0;
-            filteredOrders.forEach(order => {
-                const qty = parseFloat(order.qty) || 0;
-                const cost = parseFloat(order.cost) || 0;
-                sumQty += qty;
-                sumCost += cost * qty;
-                sumSupply += parseFloat(order.supply) || 0;
+            // 필터 옵션 채우기
+            const dealers = [...new Set(filteredOrders.map(o => o.dealer).filter(Boolean))].sort();
+            const brands = [...new Set(filteredOrders.map(o => o.brand).filter(Boolean))].sort();
+            const dealerSel = document.getElementById('ordersDealerFilter');
+            const brandSel = document.getElementById('ordersBrandFilter');
+            const prevDealer = dealerSel ? dealerSel.value : '';
+            const prevBrand = brandSel ? brandSel.value : '';
+            if (dealerSel) dealerSel.innerHTML = '<option value="">전체</option>' + dealers.map(d => `<option value="${escHtml(d)}">${escHtml(d)}</option>`).join('');
+            if (brandSel) brandSel.innerHTML = '<option value="">전체</option>' + brands.map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('');
+            if (dealerSel) dealerSel.value = prevDealer;
+            if (brandSel) brandSel.value = prevBrand;
+
+            renderOrdersTable();
+        }
+
+        function resetOrdersFilter() {
+            document.getElementById('ordersSearch').value = '';
+            document.getElementById('ordersDealerFilter').value = '';
+            document.getElementById('ordersBrandFilter').value = '';
+            document.getElementById('ordersSort').value = 'date_asc';
+            renderOrdersTable();
+        }
+
+        function renderOrdersTable() {
+            const search = (document.getElementById('ordersSearch')?.value || '').toLowerCase();
+            const dealerFilter = document.getElementById('ordersDealerFilter')?.value || '';
+            const brandFilter = document.getElementById('ordersBrandFilter')?.value || '';
+            const sort = document.getElementById('ordersSort')?.value || 'date_asc';
+
+            let orders = [...window._allFilteredOrders];
+
+            if (search) {
+                orders = orders.filter(o =>
+                    (o.product || '').toLowerCase().includes(search) ||
+                    (o.dealer || '').toLowerCase().includes(search) ||
+                    (o.school || '').toLowerCase().includes(search) ||
+                    (o.code || '').toLowerCase().includes(search) ||
+                    (o.brand || '').toLowerCase().includes(search) ||
+                    (o.remark || '').toLowerCase().includes(search)
+                );
+            }
+            if (dealerFilter) orders = orders.filter(o => o.dealer === dealerFilter);
+            if (brandFilter) orders = orders.filter(o => o.brand === brandFilter);
+
+            orders.sort((a, b) => {
+                if (sort === 'date_asc') return a.shippingDate.localeCompare(b.shippingDate);
+                if (sort === 'date_desc') return b.shippingDate.localeCompare(a.shippingDate);
+                if (sort === 'dealer') return (a.dealer || '').localeCompare(b.dealer || '');
+                if (sort === 'product') return (a.product || '').localeCompare(b.product || '');
+                if (sort === 'supply_desc') return (b.supply || 0) - (a.supply || 0);
+                return 0;
             });
 
+            let sumQty = 0, sumCost = 0, sumSupply = 0;
+            orders.forEach(o => {
+                sumQty += parseFloat(o.qty) || 0;
+                sumCost += (parseFloat(o.cost) || 0) * (parseFloat(o.qty) || 0);
+                sumSupply += parseFloat(o.supply) || 0;
+            });
             const summaryEl = document.getElementById('ordersSummary');
             if (summaryEl) {
                 const cards = [
-                    { label: '총 건수', value: `${filteredOrders.length}건`, color: '#667eea' },
+                    { label: '총 건수', value: `${orders.length}건`, color: '#667eea' },
                     { label: '수량 합계', value: `${sumQty.toLocaleString()}개`, color: '#667eea' },
-                    { label: '입고가 합계', value: `₩${Math.round(sumCost).toLocaleString()}`, color: '#f59e0b' },
-                    { label: '출고가 합계', value: `₩${Math.round(sumSupply).toLocaleString()}`, color: '#10b981' },
-                    { label: '마진', value: `₩${Math.round(sumSupply - sumCost).toLocaleString()}`, color: '#ef4444' },
+                    { label: '입고가 합계', value: `&#x20A9;${Math.round(sumCost).toLocaleString()}`, color: '#f59e0b' },
+                    { label: '출고가 합계', value: `&#x20A9;${Math.round(sumSupply).toLocaleString()}`, color: '#10b981' },
+                    { label: '마진', value: `&#x20A9;${Math.round(sumSupply - sumCost).toLocaleString()}`, color: '#ef4444' },
                 ];
                 summaryEl.innerHTML = cards.map(c => `
-                    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 20px; min-width: 130px; border-top: 3px solid ${c.color};">
-                        <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">${c.label}</div>
-                        <div style="font-size: 16px; font-weight: 700; color: ${c.color};">${c.value}</div>
+                    <div style="background:white; border:1px solid #e5e7eb; border-radius:8px; padding:12px 20px; min-width:130px; border-top:3px solid ${c.color};">
+                        <div style="font-size:11px; color:#6b7280; margin-bottom:4px;">${c.label}</div>
+                        <div style="font-size:16px; font-weight:700; color:${c.color};">${c.value}</div>
                     </div>
                 `).join('');
             }
 
-            let html = '';
-            filteredOrders.forEach((order) => {
+            const tbody = document.getElementById('ordersTable');
+            if (!orders.length) {
+                tbody.innerHTML = '<tr><td colspan="16" class="empty">발주가 없습니다</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = orders.map((order, i) => `
+                <tr data-oidx="${i}">
+                    <td>${escHtml(order.shippingDate || '-')}</td>
+                    <td>${escHtml(order.dealer || '')}</td>
+                    <td>${escHtml(order.brand || '')}</td>
+                    <td>${escHtml(order.code || '')}</td>
+                    <td>${escHtml(order.product || '')}</td>
+                    <td>${escHtml(order.spec || '')}</td>
+                    <td>${escHtml(order.detailSpec || '-')}</td>
+                    <td class="amount">${order.qty}</td>
+                    <td class="amount">&#x20A9;${(order.cost || 0).toLocaleString()}</td>
+                    <td class="amount">&#x20A9;${((order.cost || 0) * order.qty).toLocaleString()}</td>
+                    <td class="amount">&#x20A9;${(order.price || 0).toLocaleString()}</td>
+                    <td class="amount">&#x20A9;${(order.supply || 0).toLocaleString()}</td>
+                    <td>${escHtml(order.school || '-')}</td>
+                    <td>${escHtml(order.remark || '-')}</td>
+                    <td><button class="btn ${order.completed ? 'btn-success' : 'btn-danger'}" data-action="toggle" data-oidx="${i}">${order.completed ? '완료' : '미발주'}</button></td>
+                    <td>
+                        <button class="btn btn-success" data-action="edit" data-oidx="${i}" style="margin-right:5px;">수정</button>
+                        <button class="btn btn-danger" data-action="delete" data-oidx="${i}">삭제</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // 이벤트 위임 - 특수문자 안전
+            tbody.onclick = async (e) => {
+                const btn = e.target.closest('button[data-action]');
+                if (!btn) return;
+                const i = parseInt(btn.dataset.oidx);
+                const order = orders[i];
                 const key = order._storageKey;
                 const idx = order._storageIdx;
-                html += `
-                    <tr>
-                        <td>${order.shippingDate || '-'}</td>
-                        <td>${order.dealer}</td>
-                        <td>${order.brand}</td>
-                        <td>${order.code}</td>
-                        <td>${escHtml(order.product)}</td>
-                        <td>${escHtml(order.spec)}</td>
-                        <td>${order.detailSpec || '-'}</td>
-                        <td class="amount">${order.qty}</td>
-                        <td class="amount">₩${(order.cost || 0).toLocaleString()}</td>
-                        <td class="amount">₩${((order.cost || 0) * order.qty).toLocaleString()}</td>
-                        <td class="amount">₩${order.price.toLocaleString()}</td>
-                        <td class="amount">₩${order.supply.toLocaleString()}</td>
-                        <td>${order.school}</td>
-                        <td>${order.remark || '-'}</td>
-                        <td>
-                            <button class="btn ${order.completed ? 'btn-success' : 'btn-danger'}" onclick="toggleOrderStatus('${key}', ${idx})">
-                                ${order.completed ? '완료' : '미발주'}
-                            </button>
-                        </td>
-                        <td>
-                            <button class="btn btn-success" onclick="editOrder('${key}', ${idx})" style="margin-right: 5px;">수정</button>
-                            <button class="btn btn-danger" onclick="deleteOrder('${key}', ${idx})">삭제</button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            document.getElementById('ordersTable').innerHTML = html || '<tr><td colspan="16" class="empty">발주가 없습니다</td></tr>';
+                const action = btn.dataset.action;
+
+                if (action === 'edit') {
+                    openOrderEditModal(order, key, idx);
+                } else if (action === 'delete') {
+                    if (confirm('삭제하시겠습니까?')) {
+                        const bOrders = await loadOrdersBucket(key);
+                        bOrders.splice(idx, 1);
+                        await saveOrdersBucket(key, bOrders);
+                        updateOrdersList();
+                    }
+                } else if (action === 'toggle') {
+                    const bOrders = await loadOrdersBucket(key);
+                    bOrders[idx].completed = !bOrders[idx].completed;
+                    await saveOrdersBucket(key, bOrders);
+                    updateOrdersList();
+                }
+            };
+        }
+
+        function openOrderEditModal(order, key, idx) {
+            window.editingOrderKey = key;
+            window.editingOrderIdx = idx;
+            document.getElementById('editOrderDate').value = order.shippingDate || '';
+            document.getElementById('editOrderDealer').value = order.dealer || '';
+            document.getElementById('editOrderBrand').value = order.brand || '';
+            document.getElementById('editOrderCode').value = order.code || '';
+            document.getElementById('editOrderProduct').value = order.product || '';
+            document.getElementById('editOrderSpec').value = order.spec || '';
+            document.getElementById('editOrderQty').value = order.qty || 0;
+            document.getElementById('editOrderPrice').value = order.price || 0;
+            document.getElementById('editOrderSchool').value = order.school || '';
+            document.getElementById('editOrderRemark').value = order.remark || '';
+            document.getElementById('orderModal').classList.add('show');
         }
         
         async function updateOrdersYearMonth() {
