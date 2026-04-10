@@ -1238,31 +1238,53 @@
     
     <!-- 발주 수정 모달 -->
     <div id="orderModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width:560px;">
             <div class="modal-header">발주 수정</div>
-            <div style="margin-bottom: 15px;">
-                <label class="form-label">급식일자</label>
-                <input type="date" id="editOrderDate">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:4px;">
+                <div>
+                    <label class="form-label">급식일자</label>
+                    <input type="date" id="editOrderDate">
+                </div>
+                <div>
+                    <label class="form-label">거래처</label>
+                    <input type="text" id="editOrderDealer">
+                </div>
+                <div>
+                    <label class="form-label">브랜드</label>
+                    <input type="text" id="editOrderBrand">
+                </div>
+                <div>
+                    <label class="form-label">상품코드</label>
+                    <input type="text" id="editOrderCode">
+                </div>
             </div>
-            <div style="margin-bottom: 15px;">
-                <label class="form-label">거래처</label>
-                <input type="text" id="editOrderDealer" readonly style="background: #f9fafb;">
-            </div>
-            <div style="margin-bottom: 15px;">
+            <div style="margin-bottom:12px;">
                 <label class="form-label">상품명</label>
-                <input type="text" id="editOrderProduct" readonly style="background: #f9fafb;">
+                <input type="text" id="editOrderProduct">
             </div>
-            <div style="margin-bottom: 15px;">
-                <label class="form-label">수량</label>
-                <input type="number" id="editOrderQty">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px;">
+                <div>
+                    <label class="form-label">규격</label>
+                    <input type="text" id="editOrderSpec">
+                </div>
+                <div>
+                    <label class="form-label">수량</label>
+                    <input type="number" id="editOrderQty">
+                </div>
+                <div>
+                    <label class="form-label">출고단가</label>
+                    <input type="number" id="editOrderPrice">
+                </div>
             </div>
-            <div style="margin-bottom: 15px;">
-                <label class="form-label">학교명</label>
-                <input type="text" id="editOrderSchool">
-            </div>
-            <div style="margin-bottom: 15px;">
-                <label class="form-label">비고</label>
-                <input type="text" id="editOrderRemark" placeholder="메모 (선발주, 행사상품 등)">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:4px;">
+                <div>
+                    <label class="form-label">학교명</label>
+                    <input type="text" id="editOrderSchool">
+                </div>
+                <div>
+                    <label class="form-label">비고</label>
+                    <input type="text" id="editOrderRemark" placeholder="메모 (선발주, 행사상품 등)">
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal('orderModal')" style="background: #e5e7eb; color: #374151;">취소</button>
@@ -1271,6 +1293,35 @@
         </div>
     </div>
     
+    <!-- 배송표 수정 모달 -->
+    <div id="shippingEditModal" class="modal">
+        <div class="modal-content" style="max-width:440px;">
+            <div class="modal-header">배송표 수정</div>
+            <div style="margin-bottom:12px;">
+                <label class="form-label">상품명</label>
+                <input type="text" id="seProduct" style="background:#f9fafb;" readonly>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                <div>
+                    <label class="form-label">수량</label>
+                    <input type="number" id="seQty">
+                </div>
+                <div>
+                    <label class="form-label">학교명</label>
+                    <input type="text" id="seSchool">
+                </div>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label class="form-label">비고</label>
+                <input type="text" id="seRemark" placeholder="메모 (선발주, 행사상품 등)">
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('shippingEditModal')" style="background:#e5e7eb; color:#374151;">취소</button>
+                <button class="btn btn-primary" onclick="saveShippingEdit()">저장</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 장려금율 설정 모달 -->
     <div id="incentiveModal" class="modal">
         <div class="modal-content">
@@ -1626,8 +1677,20 @@
         }
         
         function extractBrand(code) {
-            const match = code.match(/_([\w]+)/);
-            return match ? match[1] : '-';
+            const brandMap = {
+                'SCH': '스쿨쉐프',
+                'BRM': '바른웰',
+                'BRW': '바른웰',
+                'GAD': '가득원',
+                'SOL': '솔선수범'
+            };
+            // 상품코드에서 브랜드 키 추출 (예: 26년1학기_SCH1 -> SCH)
+            const match = code.match(/_([A-Z]+)/);
+            if (match) {
+                const key = match[1];
+                return brandMap[key] || key;
+            }
+            return '-';
         }
         
         function updateProductSearch(query) {
@@ -2437,11 +2500,15 @@
             window.editingOrderKey = key;
             window.editingOrderIdx = idx;
             
-            document.getElementById('editOrderDate').value = order.shippingDate;
-            document.getElementById('editOrderDealer').value = order.dealer;
-            document.getElementById('editOrderProduct').value = order.product;
-            document.getElementById('editOrderQty').value = order.qty;
-            document.getElementById('editOrderSchool').value = order.school;
+            document.getElementById('editOrderDate').value = order.shippingDate || '';
+            document.getElementById('editOrderDealer').value = order.dealer || '';
+            document.getElementById('editOrderBrand').value = order.brand || '';
+            document.getElementById('editOrderCode').value = order.code || '';
+            document.getElementById('editOrderProduct').value = order.product || '';
+            document.getElementById('editOrderSpec').value = order.spec || '';
+            document.getElementById('editOrderQty').value = order.qty || 0;
+            document.getElementById('editOrderPrice').value = order.price || 0;
+            document.getElementById('editOrderSchool').value = order.school || '';
             document.getElementById('editOrderRemark').value = order.remark || '';
             
             document.getElementById('orderModal').classList.add('show');
@@ -2452,15 +2519,23 @@
             const idx = window.editingOrderIdx;
             const orders = await loadOrdersBucket(key);
             
+            const qty = parseFloat(document.getElementById('editOrderQty').value) || 0;
+            const price = parseFloat(document.getElementById('editOrderPrice').value) || 0;
+
             orders[idx].shippingDate = document.getElementById('editOrderDate').value;
-            orders[idx].qty = parseFloat(document.getElementById('editOrderQty').value) || 0;
+            orders[idx].dealer = document.getElementById('editOrderDealer').value;
+            orders[idx].brand = document.getElementById('editOrderBrand').value;
+            orders[idx].code = document.getElementById('editOrderCode').value;
+            orders[idx].product = document.getElementById('editOrderProduct').value;
+            orders[idx].spec = document.getElementById('editOrderSpec').value;
+            orders[idx].qty = qty;
+            orders[idx].price = price;
+            orders[idx].supply = price * qty;
             orders[idx].school = document.getElementById('editOrderSchool').value;
             orders[idx].remark = document.getElementById('editOrderRemark').value;
-            orders[idx].supply = orders[idx].price * orders[idx].qty;
             
             await saveOrdersBucket(key, orders);
             closeModal('orderModal');
-            updateOrdersYearMonth();
             updateOrdersList();
             alert('발주가 수정되었습니다');
         }
@@ -2644,6 +2719,42 @@
             });
         }
         
+        async function openShippingEdit(uniqueId, bucketKey, bucketIdx) {
+            if (!bucketKey || bucketIdx < 0) {
+                alert('수정할 발주 정보를 찾을 수 없습니다');
+                return;
+            }
+            const orders = await loadOrdersBucket(bucketKey);
+            const order = orders[bucketIdx];
+            if (!order) { alert('발주 데이터를 찾을 수 없습니다'); return; }
+
+            window._seKey = bucketKey;
+            window._seIdx = bucketIdx;
+
+            document.getElementById('seProduct').value = order.product || '';
+            document.getElementById('seQty').value = order.qty || 0;
+            document.getElementById('seSchool').value = order.school || '';
+            document.getElementById('seRemark').value = order.remark || '';
+
+            document.getElementById('shippingEditModal').classList.add('show');
+        }
+
+        async function saveShippingEdit() {
+            const key = window._seKey;
+            const idx = window._seIdx;
+            const orders = await loadOrdersBucket(key);
+
+            orders[idx].qty = parseFloat(document.getElementById('seQty').value) || 0;
+            orders[idx].school = document.getElementById('seSchool').value;
+            orders[idx].remark = document.getElementById('seRemark').value;
+            orders[idx].supply = orders[idx].price * orders[idx].qty;
+
+            await saveOrdersBucket(key, orders);
+            closeModal('shippingEditModal');
+            generateShipping(); // 배송표 새로고침
+            alert('수정되었습니다');
+        }
+
         async function generateShipping() {
             const startDate = document.getElementById('shippingStartDate').value;
             const endDate = document.getElementById('shippingEndDate').value;
@@ -2728,6 +2839,7 @@
                                         <th style="padding: 7px 10px; text-align: center; border: 1px solid #d1d5db; width: 6%; font-weight: 700; font-size: 11px; color: #374151;">수량</th>
                                         <th style="padding: 7px 10px; text-align: center; border: 1px solid #d1d5db; width: 8%; font-weight: 700; font-size: 11px; color: #374151;">유형</th>
                                         <th style="padding: 7px 10px; text-align: left; border: 1px solid #d1d5db; width: 13%; font-weight: 700; font-size: 11px; color: #374151;">학교명</th>
+                                        <th style="padding: 7px 10px; text-align: center; border: 1px solid #d1d5db; width: 5%; font-weight: 700; font-size: 11px; color: #374151;">수정</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -2742,6 +2854,8 @@
                             const uniqueId = `shipping_${shippingDate}_${dealer}_${orderIdx}`;
                             const isFirst = orderIdx === 0;
                             const isLast = orderIdx === dealerOrders.length - 1;
+                            const bucketKey = order.storageKey || '';
+                            const bucketIdx = order.orderIdx !== undefined ? order.orderIdx : -1;
 
                             // rowspan 없이 - 첫행만 이름 표시, 나머지는 빈 셀 (테두리로 연결감)
                             const dealerCellContent = isFirst ? dealer : '';
@@ -2763,6 +2877,10 @@
                                         </select>
                                     </td>
                                     <td style="padding: 7px 10px; border: 1px solid #d1d5db; font-size: 11px;">${order.school || '-'}</td>
+                                    <td style="padding: 4px 6px; border: 1px solid #d1d5db; text-align: center;">
+                                        <button onclick="openShippingEdit('${uniqueId}', '${bucketKey}', ${bucketIdx})"
+                                            style="padding:3px 8px; background:#667eea; color:white; border:none; border-radius:4px; font-size:10px; cursor:pointer; white-space:nowrap;">수정</button>
+                                    </td>
                                 </tr>
                                 <tr id="memo_${uniqueId}" style="display: none; background: #fffbeb;">
                                     <td style="padding: 0; border-left: 1px solid #d1d5db; border-right: 1px solid #d1d5db; border-top: none; border-bottom: none; background: ${dealerBg};"></td>
