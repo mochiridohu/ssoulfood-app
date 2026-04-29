@@ -856,38 +856,6 @@
             </div>
         </div>
         
-        <!-- 매입 거래내역서 탭 -->
-        <div id="purchase" class="content">
-            <div class="section">
-                <div class="section-title">📥 매입 거래내역서</div>
-
-                <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; align-items:flex-end;">
-                    <div>
-                        <label class="form-label">시작일</label>
-                        <input type="date" id="purchaseStartDate">
-                    </div>
-                    <div>
-                        <label class="form-label">종료일</label>
-                        <input type="date" id="purchaseEndDate">
-                    </div>
-                    <div>
-                        <label class="form-label">브랜드</label>
-                        <select id="purchaseBrand" style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
-                            <option value="">전체</option>
-                            <option value="스쿨쉐프">스쿨쉐프</option>
-                            <option value="바른웰">바른웰</option>
-                            <option value="가득원">가득원</option>
-                            <option value="솔선수범">솔선수범</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" onclick="generatePurchase()">🔍 조회</button>
-                    <button class="btn" onclick="printPurchase()" style="background:#374151; color:white;">🖨️ 인쇄</button>
-                </div>
-
-                <div id="purchaseResult"></div>
-            </div>
-        </div>
-
         <!-- 매입 내역서 탭 -->
         <div id="purchase" class="content">
             <div class="section">
