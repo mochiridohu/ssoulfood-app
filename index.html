@@ -645,6 +645,7 @@
                     <div style="min-width:120px;">
                         <label class="form-label">정렬</label>
                         <select id="ordersSort" onchange="renderOrdersTable()" style="width:100%;">
+                            <option value="newest">최신 등록순</option>
                             <option value="date_asc">날짜 오름차순</option>
                             <option value="date_desc">날짜 내림차순</option>
                             <option value="dealer">거래처순</option>
@@ -909,6 +910,28 @@
                             </thead>
                             <tbody id="topSchoolsTable">
                                 <tr><td colspan="4" style="text-align: center; color: #999;">조회 버튼을 클릭하세요</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 총 공급가액 TOP 10 상품 -->
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 15px;">💰 총 공급가액 TOP 10 상품</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">순위</th>
+                                    <th>상품명</th>
+                                    <th>브랜드</th>
+                                    <th class="amount">총 수량</th>
+                                    <th class="amount">총 공급가액</th>
+                                    <th class="amount">비중</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topSupplyTable">
+                                <tr><td colspan="6" style="text-align: center; color: #999;">조회 버튼을 클릭하세요</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1496,15 +1519,18 @@
         }
 
         async function saveDealers(dealers) {
-            await db.from('dealers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             if (!dealers || dealers.length === 0) return;
+            // 전체 삭제 후 재삽입 대신 upsert 방식으로 변경
             const rows = dealers.map(d => ({
                 name: d.name, ceo: d.ceo || '', phone: d.phone || '',
                 email: d.email || '', fax: d.fax || '',
                 biz_no: d.bizNo || '', address: d.address || ''
             }));
-            const { error } = await db.from('dealers').insert(rows);
-            if (error) console.error('saveDealers error:', error);
+            const { error } = await db.from('dealers').upsert(rows, { onConflict: 'name' });
+            if (error) {
+                console.error('saveDealers error:', error);
+                alert('거래처 저장 오류: ' + error.message);
+            }
         }
 
         async function loadIncentiveRates() {
@@ -1878,8 +1904,8 @@
         }
         
         function downloadDealerTemplate() {
-            const csv = '거래처명,대표자,전화,사업자등록번호\n' +
-                '경호푸드시스템,김영희,031-1234-5678,123-45-67890';
+            const csv = '거래처명,대표자,전화,이메일,팩스,사업자등록번호,주소\n' +
+                '경호푸드시스템,김영희,031-1234-5678,example@naver.com,031-1234-5679,123-45-67890,경기도 구리시 갈매순환로';
             downloadCSV(csv, '쏘울푸드_거래처템플릿.csv');
         }
         
@@ -1994,35 +2020,30 @@
         async function importDealers() {
             const file = document.getElementById('dealersUpload').files[0];
             if (!file) return;
-            
             const reader = new FileReader();
             reader.onload = async (e) => {
                 let text = e.target.result;
-                
-                if (text.charCodeAt(0) === 0xFEFF) {
-                    text = text.slice(1);
-                }
-                
+                if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
                 text = text.replace(/\r\n/g, '\n');
                 const rows = parseCSV(text);
-                
-                allDealers = [];
+                const newDealers = [];
                 for (let i = 1; i < rows.length; i++) {
                     const cols = rows[i];
-                    if (cols[0]) {
+                    if (!cols[0]) continue;
+                    const name = cols[0].trim();
+                    if (!allDealers.find(d => d.name === name)) {
                         allDealers.push({
-                            name: cols[0] || '',
-                            ceo: cols[1] || '',
-                            phone: cols[2] || '',
-                            bizNo: cols[3] || ''
+                            name, ceo: cols[1] || '', phone: cols[2] || '',
+                            email: cols[3] || '', fax: cols[4] || '',
+                            bizNo: cols[5] || '', address: cols[6] || ''
                         });
+                        newDealers.push(name);
                     }
                 }
-                
                 await saveDealers(allDealers);
                 updateDealerSelect();
                 updateDealersList();
-                alert(`${allDealers.length}개 거래처가 등록되었습니다`);
+                alert(newDealers.length + '개 거래처가 추가되었습니다.');
                 document.getElementById('dealersUpload').value = '';
             };
             reader.readAsText(file, 'UTF-8');
@@ -2430,6 +2451,7 @@
             if (brandFilter) orders = orders.filter(o => o.brand === brandFilter);
 
             orders.sort((a, b) => {
+                if (sort === 'newest') return b._storageIdx - a._storageIdx;
                 if (sort === 'date_asc') return a.shippingDate.localeCompare(b.shippingDate);
                 if (sort === 'date_desc') return b.shippingDate.localeCompare(a.shippingDate);
                 if (sort === 'dealer') return (a.dealer || '').localeCompare(b.dealer || '');
@@ -2574,36 +2596,25 @@
             const years = Array.from(yearsSet).sort();
             const months = Array.from(monthsSet).sort((a, b) => a - b);
             
-            // 연도 셀렉트 업데이트
+            const nowYear = new Date().getFullYear();
+            const nowMonth = new Date().getMonth() + 1;
+
+            // 연도 셀렉트 - 현재 연도 기본
             const yearSelect = document.getElementById('ordersYear');
             if (yearSelect) {
-                const currentYear = parseInt(yearSelect.value.replace('년', ''));
                 yearSelect.innerHTML = years.map(y => 
                     `<option value="${y}년">${y}년</option>`
                 ).join('');
-                
-                // 이전에 선택된 연도가 있으면 선택, 없으면 첫 번째 연도
-                if (years.includes(currentYear)) {
-                    yearSelect.value = `${currentYear}년`;
-                } else {
-                    yearSelect.value = `${years[0]}년`;
-                }
+                yearSelect.value = years.includes(nowYear) ? `${nowYear}년` : `${years[years.length-1]}년`;
             }
             
-            // 월 셀렉트 업데이트
+            // 월 셀렉트 - 현재 월 기본
             const monthSelect = document.getElementById('ordersMonth');
             if (monthSelect) {
-                const currentMonth = parseInt(monthSelect.value.replace('월', ''));
                 monthSelect.innerHTML = months.map(m => 
                     `<option value="${m}월">${m}월</option>`
                 ).join('');
-                
-                // 이전에 선택된 월이 있으면 선택, 없으면 첫 번째 월
-                if (months.includes(currentMonth)) {
-                    monthSelect.value = `${currentMonth}월`;
-                } else {
-                    monthSelect.value = `${months[0]}월`;
-                }
+                monthSelect.value = months.includes(nowMonth) ? `${nowMonth}월` : `${months[months.length-1]}월`;
             }
             
             updateOrdersList();
@@ -3209,13 +3220,24 @@
             document.querySelectorAll('[data-incentive-dealer]').forEach(sel => {
                 const dealer = sel.dataset.incentiveDealer;
                 const rate = parseFloat(sel.value) || 0;
-                // 월별 키만 저장 (전역값 덮어쓰기 제거)
                 const monthlyKey = getMonthlyIncentiveKey(dealer, year, month);
                 incentiveRates[monthlyKey] = rate;
             });
             await saveIncentiveRatesDB(incentiveRates);
             generateSummary();
-            alert('장려금율이 저장되었습니다!');
+
+            // 손익관리 탭이 열려있으면 자동 새로고침
+            const pnlTab = document.getElementById('pnl');
+            if (pnlTab && pnlTab.classList.contains('active')) {
+                await loadPnl();
+            }
+            // 원장발송 탭이 열려있으면 자동 새로고침
+            const mailTab = document.getElementById('mailsend');
+            if (mailTab && mailTab.classList.contains('active')) {
+                loadMailSend();
+            }
+
+            alert('장려금율이 저장되었습니다!\n손익관리 및 원장발송에도 자동 반영됩니다.');
         }
 
         async function generateSummary() {
@@ -3527,6 +3549,47 @@
                 `;
             });
             document.getElementById('topSchoolsTable').innerHTML = schoolHtml;
+
+            // 총 공급가액 TOP 10 상품
+            const supplyMap = {};
+            const totalSupplyAll = filteredOrders.reduce((s, o) => s + (o.supply || 0), 0);
+            filteredOrders.forEach(order => {
+                const key = order.product;
+                if (!supplyMap[key]) {
+                    supplyMap[key] = { brand: order.brand || '-', qty: 0, supply: 0 };
+                }
+                supplyMap[key].qty += parseFloat(order.qty) || 0;
+                supplyMap[key].supply += parseFloat(order.supply) || 0;
+            });
+
+            const topSupply = Object.entries(supplyMap)
+                .map(([name, data]) => ({ name, ...data }))
+                .sort((a, b) => b.supply - a.supply)
+                .slice(0, 10);
+
+            let supplyHtml = '';
+            topSupply.forEach((item, idx) => {
+                const pct = totalSupplyAll > 0 ? ((item.supply / totalSupplyAll) * 100).toFixed(1) : 0;
+                const barWidth = Math.round((item.supply / topSupply[0].supply) * 100);
+                supplyHtml += `
+                    <tr>
+                        <td style="text-align:center; font-weight:700; color:${idx < 3 ? '#f59e0b' : '#6b7280'};">${idx + 1}</td>
+                        <td>${escHtml(item.name)}</td>
+                        <td style="text-align:center; color:#6b7280;">${escHtml(item.brand)}</td>
+                        <td class="amount">${item.qty.toLocaleString()}</td>
+                        <td class="amount" style="font-weight:700;">&#x20A9;${Math.round(item.supply).toLocaleString()}</td>
+                        <td style="text-align:right;">
+                            <div style="display:flex; align-items:center; gap:6px; justify-content:flex-end;">
+                                <div style="width:60px; height:6px; background:#f3f4f6; border-radius:3px; overflow:hidden;">
+                                    <div style="width:${barWidth}%; height:100%; background:#667eea; border-radius:3px;"></div>
+                                </div>
+                                <span style="font-size:12px; color:#374151; min-width:36px;">${pct}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('topSupplyTable').innerHTML = supplyHtml || '<tr><td colspan="6" style="text-align:center; color:#999;">데이터 없음</td></tr>';
         }
         
         async function editIncentives() {
