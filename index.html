@@ -539,7 +539,6 @@
             <button class="tab-btn" onclick="switchTab('summary')">💰 마감 현황</button>
             <button class="tab-btn" onclick="switchTab('pnl')">📈 손익 관리</button>
             <button class="tab-btn" onclick="switchTab('mailsend')">📨 원장 발송</button>
-            <button class="tab-btn" onclick="switchTab('purchase')">📥 매입 내역서</button>
             <button class="tab-btn" onclick="switchTab('purchase')">📋 매입 내역서</button>
             <button class="tab-btn" onclick="switchTab('insights')">💡 인사이트</button>
             <button class="tab-btn" onclick="switchTab('statement')">📄 거래명세표</button>
@@ -921,19 +920,19 @@
 
                 <!-- 테이블 -->
                 <div class="table-wrapper">
-                    <table>
+                    <table style="table-layout:fixed; width:100%; min-width:900px;">
                         <thead>
                             <tr>
-                                <th>급식일자</th>
-                                <th>브랜드</th>
-                                <th>상품명</th>
-                                <th>규격</th>
-                                <th class="amount">수량</th>
-                                <th class="amount">단가(VAT포함)</th>
-                                <th class="amount">단가(VAT제외)</th>
-                                <th class="amount">매입가(VAT포함)</th>
-                                <th>학교명</th>
-                                <th>납품업체(거래처)</th>
+                                <th style="width:90px;">급식일자</th>
+                                <th style="width:70px;">브랜드</th>
+                                <th style="width:200px; text-align:left;">상품명</th>
+                                <th style="width:100px; text-align:left;">규격</th>
+                                <th style="width:50px;" class="amount">수량</th>
+                                <th style="width:90px;" class="amount">매입단가<br><span style="font-size:10px;font-weight:400;">(VAT포함)</span></th>
+                                <th style="width:90px;" class="amount">매입단가<br><span style="font-size:10px;font-weight:400;">(VAT제외)</span></th>
+                                <th style="width:100px;" class="amount">매입가<br><span style="font-size:10px;font-weight:400;">(VAT포함)</span></th>
+                                <th style="width:80px;">학교명</th>
+                                <th style="width:110px;">납품업체</th>
                             </tr>
                         </thead>
                         <tbody id="purchaseTable">
@@ -942,9 +941,9 @@
                         <tfoot>
                             <tr style="background:#f8fafc; font-weight:700;">
                                 <td colspan="4" style="padding:10px 14px;">합계</td>
-                                <td class="amount" id="purchaseTotalQty">-</td>
+                                <td class="amount" id="purchaseTotalQty" style="padding:10px 14px;">-</td>
                                 <td colspan="2"></td>
-                                <td class="amount" id="purchaseTotalCost">-</td>
+                                <td class="amount" id="purchaseTotalCost" style="padding:10px 14px;">-</td>
                                 <td colspan="2"></td>
                             </tr>
                         </tfoot>
@@ -4200,24 +4199,27 @@
                 return;
             }
 
-            tbody.innerHTML = orders.map(o => {
+            tbody.innerHTML = orders.map((o, i) => {
                 const qty = parseFloat(o.qty) || 0;
-                const costPerUnit = parseFloat(o.cost) || 0;           // 단가(VAT포함) = 매입단가
-                const costExVat = Math.round(costPerUnit / 1.1);        // 단가(VAT제외)
-                const totalCostRow = Math.round(costPerUnit * qty);     // 매입가(VAT포함)
+                const costPerUnit = parseFloat(o.cost) || 0;
+                const costExVat = Math.round(costPerUnit / 1.1);
+                const totalCostRow = Math.round(costPerUnit * qty);
                 totalQty += qty;
                 totalCost += totalCostRow;
-                return `<tr>
-                    <td>${escHtml(o.shippingDate||'-')}</td>
-                    <td>${escHtml((o.brand||'-').toUpperCase())}</td>
-                    <td>${escHtml(o.product||'-')}</td>
-                    <td>${escHtml(o.spec||'-')}</td>
-                    <td class="amount">${qty.toLocaleString()}</td>
-                    <td class="amount">&#x20A9;${costPerUnit.toLocaleString()}</td>
-                    <td class="amount">&#x20A9;${costExVat.toLocaleString()}</td>
-                    <td class="amount" style="font-weight:700;">&#x20A9;${totalCostRow.toLocaleString()}</td>
-                    <td>${escHtml(o.school||'-')}</td>
-                    <td>${escHtml(o.dealer||'-')}</td>
+                const bg = i % 2 === 1 ? 'background:#fafafa;' : '';
+                return `<tr style="border-bottom:1px solid #f3f4f6; ${bg}; font-size:12px;">
+                    <td style="padding:8px 10px; white-space:nowrap;">${escHtml(o.shippingDate||'-')}</td>
+                    <td style="padding:8px 10px; text-align:center;">
+                        <span style="background:#f0f4ff;color:#4338ca;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;">${escHtml((o.brand||'-').toUpperCase())}</span>
+                    </td>
+                    <td style="padding:8px 10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escHtml(o.product||'')}">${escHtml(o.product||'-')}</td>
+                    <td style="padding:8px 10px; color:#6b7280; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(o.spec||'-')}</td>
+                    <td style="padding:8px 10px; text-align:right; font-weight:600;">${qty.toLocaleString()}</td>
+                    <td style="padding:8px 10px; text-align:right;">&#x20A9;${costPerUnit.toLocaleString()}</td>
+                    <td style="padding:8px 10px; text-align:right; color:#6b7280;">&#x20A9;${costExVat.toLocaleString()}</td>
+                    <td style="padding:8px 10px; text-align:right; font-weight:700; color:#374151;">&#x20A9;${totalCostRow.toLocaleString()}</td>
+                    <td style="padding:8px 10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(o.school||'-')}</td>
+                    <td style="padding:8px 10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#6b7280;">${escHtml(o.dealer||'-')}</td>
                 </tr>`;
             }).join('');
 
@@ -4246,7 +4248,7 @@
             if (brandFilter) orders = orders.filter(o => (o.brand||'').trim().toUpperCase() === brandFilter);
             if (!orders.length) { alert('데이터가 없습니다'); return; }
 
-            let csv = '\uFEFF급식일자,브랜드,상품명,규격,수량,단가(VAT포함),단가(VAT제외),매입가(VAT포함),학교명,납품업체\n';
+            let csv = '\uFEFF급식일자,브랜드,상품명,규격,수량,매입단가(VAT포함),매입단가(VAT제외),매입가(VAT포함),학교명,납품업체\n';
             orders.forEach(o => {
                 const qty = parseFloat(o.qty) || 0;
                 const cost = parseFloat(o.cost) || 0;
