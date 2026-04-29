@@ -539,6 +539,8 @@
             <button class="tab-btn" onclick="switchTab('summary')">💰 마감 현황</button>
             <button class="tab-btn" onclick="switchTab('pnl')">📈 손익 관리</button>
             <button class="tab-btn" onclick="switchTab('mailsend')">📨 원장 발송</button>
+            <button class="tab-btn" onclick="switchTab('purchase')">📥 매입 내역서</button>
+            <button class="tab-btn" onclick="switchTab('purchase')">📋 매입 내역서</button>
             <button class="tab-btn" onclick="switchTab('insights')">💡 인사이트</button>
             <button class="tab-btn" onclick="switchTab('statement')">📄 거래명세표</button>
             <button class="tab-btn" onclick="switchTab('export')">📥 내보내기</button>
@@ -645,7 +647,6 @@
                     <div style="min-width:120px;">
                         <label class="form-label">정렬</label>
                         <select id="ordersSort" onchange="renderOrdersTable()" style="width:100%;">
-                            <option value="newest">최신 등록순</option>
                             <option value="date_asc">날짜 오름차순</option>
                             <option value="date_desc">날짜 내림차순</option>
                             <option value="dealer">거래처순</option>
@@ -856,6 +857,102 @@
             </div>
         </div>
         
+        <!-- 매입 거래내역서 탭 -->
+        <div id="purchase" class="content">
+            <div class="section">
+                <div class="section-title">📥 매입 거래내역서</div>
+
+                <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; align-items:flex-end;">
+                    <div>
+                        <label class="form-label">시작일</label>
+                        <input type="date" id="purchaseStartDate">
+                    </div>
+                    <div>
+                        <label class="form-label">종료일</label>
+                        <input type="date" id="purchaseEndDate">
+                    </div>
+                    <div>
+                        <label class="form-label">브랜드</label>
+                        <select id="purchaseBrand" style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+                            <option value="">전체</option>
+                            <option value="스쿨쉐프">스쿨쉐프</option>
+                            <option value="바른웰">바른웰</option>
+                            <option value="가득원">가득원</option>
+                            <option value="솔선수범">솔선수범</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="generatePurchase()">🔍 조회</button>
+                    <button class="btn" onclick="printPurchase()" style="background:#374151; color:white;">🖨️ 인쇄</button>
+                </div>
+
+                <div id="purchaseResult"></div>
+            </div>
+        </div>
+
+        <!-- 매입 내역서 탭 -->
+        <div id="purchase" class="content">
+            <div class="section">
+                <div class="section-title">📋 매입 내역서</div>
+
+                <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:20px;">
+                    <div>
+                        <label class="form-label">조회 연도</label>
+                        <select id="purchaseYear" onchange="loadPurchase()" style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+                            <option value="2025">2025년</option>
+                            <option value="2026" selected>2026년</option>
+                            <option value="2027">2027년</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">조회 월</label>
+                        <select id="purchaseMonth" onchange="loadPurchase()" style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;"></select>
+                    </div>
+                    <div>
+                        <label class="form-label">브랜드 필터</label>
+                        <select id="purchaseBrand" onchange="renderPurchaseTable()" style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; min-width:120px;">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="downloadPurchaseCSV()">📥 CSV 다운로드</button>
+                </div>
+
+                <!-- 요약 -->
+                <div id="purchaseSummary" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;"></div>
+
+                <!-- 테이블 -->
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>급식일자</th>
+                                <th>브랜드</th>
+                                <th>상품명</th>
+                                <th>규격</th>
+                                <th class="amount">수량</th>
+                                <th class="amount">단가(VAT포함)</th>
+                                <th class="amount">단가(VAT제외)</th>
+                                <th class="amount">매입가(VAT포함)</th>
+                                <th>학교명</th>
+                                <th>납품업체(거래처)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchaseTable">
+                            <tr><td colspan="10" style="text-align:center; color:#999; padding:20px;">조회 월을 선택하세요</td></tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background:#f8fafc; font-weight:700;">
+                                <td colspan="4" style="padding:10px 14px;">합계</td>
+                                <td class="amount" id="purchaseTotalQty">-</td>
+                                <td colspan="2"></td>
+                                <td class="amount" id="purchaseTotalCost">-</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- 6. 인사이트 탭 -->
         <div id="insights" class="content">
             <div class="section">
@@ -910,28 +1007,6 @@
                             </thead>
                             <tbody id="topSchoolsTable">
                                 <tr><td colspan="4" style="text-align: center; color: #999;">조회 버튼을 클릭하세요</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- 총 공급가액 TOP 10 상품 -->
-                <div style="margin-top: 30px;">
-                    <h3 style="margin-bottom: 15px;">💰 총 공급가액 TOP 10 상품</h3>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width: 50px;">순위</th>
-                                    <th>상품명</th>
-                                    <th>브랜드</th>
-                                    <th class="amount">총 수량</th>
-                                    <th class="amount">총 공급가액</th>
-                                    <th class="amount">비중</th>
-                                </tr>
-                            </thead>
-                            <tbody id="topSupplyTable">
-                                <tr><td colspan="6" style="text-align: center; color: #999;">조회 버튼을 클릭하세요</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1043,14 +1118,19 @@
                                 <span style="width:4px; height:18px; background:#f59e0b; border-radius:2px; display:inline-block;"></span>
                                 매입 (브랜드별)
                             </h3>
-                            <button onclick="addPnlRow('cost')" style="font-size:12px; padding:5px 12px; border:1px solid #f59e0b; background:white; color:#f59e0b; border-radius:6px; cursor:pointer; font-weight:600;">+ 행 추가</button>
+                            <div style="display:flex; gap:8px;">
+                                <button onclick="refreshAllCostRows()" title="발주기록에서 전체 새로고침" style="font-size:12px; padding:5px 12px; border:1px solid #f59e0b; background:#fffbeb; color:#f59e0b; border-radius:6px; cursor:pointer; font-weight:600;">&#8635; 전체 새로고침</button>
+                                <button onclick="addPnlRow('cost')" style="font-size:12px; padding:5px 12px; border:1px solid #f59e0b; background:white; color:#f59e0b; border-radius:6px; cursor:pointer; font-weight:600;">+ 행 추가</button>
+                            </div>
                         </div>
+                        <div style="font-size:11px; color:#9ca3af; margin-bottom:8px;">* 금액을 직접 수정할 수 있습니다. &#8635; 버튼으로 발주기록 기준 자동값으로 복원.</div>
                         <div style="border-radius:8px; overflow:hidden; border:1px solid #fde68a; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
                             <table style="width:100%; border-collapse:collapse; font-size:13px;">
                                 <thead>
                                     <tr style="background:#fffbeb;">
                                         <th style="padding:10px 14px; text-align:left; border-bottom:2px solid #fcd34d; font-weight:700; color:#92400e;">브랜드</th>
                                         <th style="padding:10px 14px; text-align:right; border-bottom:2px solid #fcd34d; font-weight:700; color:#92400e; width:140px;">매입액</th>
+                                        <th style="padding:10px 14px; border-bottom:2px solid #fcd34d; width:32px;" title="행 새로고침"></th>
                                         <th style="padding:10px 14px; border-bottom:2px solid #fcd34d; width:32px;"></th>
                                     </tr>
                                 </thead>
@@ -1058,8 +1138,8 @@
                                 <tfoot>
                                     <tr style="background:#fef9c3;">
                                         <td style="padding:10px 14px; border-top:2px solid #fcd34d; font-weight:700; color:#92400e;">합계</td>
-                                        <td style="padding:10px 14px; border-top:2px solid #fcd34d; text-align:right; font-weight:700; color:#92400e;" id="pnlCostTotal">₩0</td>
-                                        <td style="padding:10px 14px; border-top:2px solid #fcd34d;"></td>
+                                        <td style="padding:10px 14px; border-top:2px solid #fcd34d; text-align:right; font-weight:700; color:#92400e;" id="pnlCostTotal">&#x20A9;0</td>
+                                        <td colspan="2" style="padding:10px 14px; border-top:2px solid #fcd34d;"></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -1073,7 +1153,10 @@
                                 <span style="width:4px; height:18px; background:#ef4444; border-radius:2px; display:inline-block;"></span>
                                 추가 지출
                             </h3>
-                            <button onclick="addPnlRow('extra')" style="font-size:12px; padding:5px 12px; border:1px solid #ef4444; background:white; color:#ef4444; border-radius:6px; cursor:pointer; font-weight:600;">+ 행 추가</button>
+                            <div style="display:flex; gap:8px;">
+                                <button onclick="openFixedExpenseSettings()" style="font-size:12px; padding:5px 12px; border:1px solid #9ca3af; background:white; color:#374151; border-radius:6px; cursor:pointer; font-weight:600;">⚙️ 고정 항목 관리</button>
+                                <button onclick="addPnlRow('extra')" style="font-size:12px; padding:5px 12px; border:1px solid #ef4444; background:white; color:#ef4444; border-radius:6px; cursor:pointer; font-weight:600;">+ 행 추가</button>
+                            </div>
                         </div>
                         <div style="border-radius:8px; overflow:hidden; border:1px solid #fecaca; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
                             <table style="width:100%; border-collapse:collapse; font-size:13px;">
@@ -1381,6 +1464,20 @@
         </div>
     </div>
 
+    <!-- 고정 지출 세팅 모달 -->
+    <div id="fixedExpenseModal" class="modal">
+        <div class="modal-content" style="max-width:480px;">
+            <div class="modal-header">⚙️ 고정 지출 항목 관리</div>
+            <div style="font-size:12px; color:#6b7280; margin-bottom:16px;">매월 반복되는 고정 지출을 등록하면 손익관리에 자동으로 불러옵니다.</div>
+            <div id="fixedExpenseList" style="max-height:320px; overflow-y:auto; margin-bottom:12px;"></div>
+            <button onclick="addFixedExpenseRow()" style="width:100%; padding:10px; border:2px dashed #d1d5db; background:white; color:#6b7280; border-radius:8px; cursor:pointer; font-size:13px; margin-bottom:16px;">+ 항목 추가</button>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('fixedExpenseModal')" style="background:#e5e7eb; color:#374151;">취소</button>
+                <button class="btn btn-primary" onclick="saveFixedExpenses()">저장</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 장려금율 설정 모달 -->
     <div id="incentiveModal" class="modal">
         <div class="modal-content">
@@ -1519,18 +1616,15 @@
         }
 
         async function saveDealers(dealers) {
+            await db.from('dealers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             if (!dealers || dealers.length === 0) return;
-            // 전체 삭제 후 재삽입 대신 upsert 방식으로 변경
             const rows = dealers.map(d => ({
                 name: d.name, ceo: d.ceo || '', phone: d.phone || '',
                 email: d.email || '', fax: d.fax || '',
                 biz_no: d.bizNo || '', address: d.address || ''
             }));
-            const { error } = await db.from('dealers').upsert(rows, { onConflict: 'name' });
-            if (error) {
-                console.error('saveDealers error:', error);
-                alert('거래처 저장 오류: ' + error.message);
-            }
+            const { error } = await db.from('dealers').insert(rows);
+            if (error) console.error('saveDealers error:', error);
         }
 
         async function loadIncentiveRates() {
@@ -1697,12 +1791,14 @@
             else if (tabName === 'summary') generateSummary();
             else if (tabName === 'pnl') loadPnl();
             else if (tabName === 'mailsend') loadMailSend();
+            else if (tabName === 'purchase') loadPurchase();
+            else if (tabName === 'purchase') generatePurchase();
             // 거래명세표는 조회 버튼을 통해서만 거래처가 로드되도록
         }
         
         function updateMonthSelect() {
             const months = Array.from({length: 12}, (_, i) => `${i + 1}월`);
-            const selects = ['orderMonth', 'ordersMonth', 'shippingMonth', 'summaryMonth', 'exportMonth', 'pnlMonth', 'mailMonth'];
+            const selects = ['orderMonth', 'ordersMonth', 'shippingMonth', 'summaryMonth', 'exportMonth', 'pnlMonth', 'mailMonth', 'purchaseMonth'];
             
             selects.forEach(id => {
                 const select = document.getElementById(id);
@@ -1904,8 +2000,8 @@
         }
         
         function downloadDealerTemplate() {
-            const csv = '거래처명,대표자,전화,이메일,팩스,사업자등록번호,주소\n' +
-                '경호푸드시스템,김영희,031-1234-5678,example@naver.com,031-1234-5679,123-45-67890,경기도 구리시 갈매순환로';
+            const csv = '거래처명,대표자,전화,사업자등록번호\n' +
+                '경호푸드시스템,김영희,031-1234-5678,123-45-67890';
             downloadCSV(csv, '쏘울푸드_거래처템플릿.csv');
         }
         
@@ -2020,30 +2116,35 @@
         async function importDealers() {
             const file = document.getElementById('dealersUpload').files[0];
             if (!file) return;
+            
             const reader = new FileReader();
             reader.onload = async (e) => {
                 let text = e.target.result;
-                if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+                
+                if (text.charCodeAt(0) === 0xFEFF) {
+                    text = text.slice(1);
+                }
+                
                 text = text.replace(/\r\n/g, '\n');
                 const rows = parseCSV(text);
-                const newDealers = [];
+                
+                allDealers = [];
                 for (let i = 1; i < rows.length; i++) {
                     const cols = rows[i];
-                    if (!cols[0]) continue;
-                    const name = cols[0].trim();
-                    if (!allDealers.find(d => d.name === name)) {
+                    if (cols[0]) {
                         allDealers.push({
-                            name, ceo: cols[1] || '', phone: cols[2] || '',
-                            email: cols[3] || '', fax: cols[4] || '',
-                            bizNo: cols[5] || '', address: cols[6] || ''
+                            name: cols[0] || '',
+                            ceo: cols[1] || '',
+                            phone: cols[2] || '',
+                            bizNo: cols[3] || ''
                         });
-                        newDealers.push(name);
                     }
                 }
+                
                 await saveDealers(allDealers);
                 updateDealerSelect();
                 updateDealersList();
-                alert(newDealers.length + '개 거래처가 추가되었습니다.');
+                alert(`${allDealers.length}개 거래처가 등록되었습니다`);
                 document.getElementById('dealersUpload').value = '';
             };
             reader.readAsText(file, 'UTF-8');
@@ -2451,7 +2552,6 @@
             if (brandFilter) orders = orders.filter(o => o.brand === brandFilter);
 
             orders.sort((a, b) => {
-                if (sort === 'newest') return b._storageIdx - a._storageIdx;
                 if (sort === 'date_asc') return a.shippingDate.localeCompare(b.shippingDate);
                 if (sort === 'date_desc') return b.shippingDate.localeCompare(a.shippingDate);
                 if (sort === 'dealer') return (a.dealer || '').localeCompare(b.dealer || '');
@@ -2596,25 +2696,36 @@
             const years = Array.from(yearsSet).sort();
             const months = Array.from(monthsSet).sort((a, b) => a - b);
             
-            const nowYear = new Date().getFullYear();
-            const nowMonth = new Date().getMonth() + 1;
-
-            // 연도 셀렉트 - 현재 연도 기본
+            // 연도 셀렉트 업데이트
             const yearSelect = document.getElementById('ordersYear');
             if (yearSelect) {
+                const currentYear = parseInt(yearSelect.value.replace('년', ''));
                 yearSelect.innerHTML = years.map(y => 
                     `<option value="${y}년">${y}년</option>`
                 ).join('');
-                yearSelect.value = years.includes(nowYear) ? `${nowYear}년` : `${years[years.length-1]}년`;
+                
+                // 이전에 선택된 연도가 있으면 선택, 없으면 첫 번째 연도
+                if (years.includes(currentYear)) {
+                    yearSelect.value = `${currentYear}년`;
+                } else {
+                    yearSelect.value = `${years[0]}년`;
+                }
             }
             
-            // 월 셀렉트 - 현재 월 기본
+            // 월 셀렉트 업데이트
             const monthSelect = document.getElementById('ordersMonth');
             if (monthSelect) {
+                const currentMonth = parseInt(monthSelect.value.replace('월', ''));
                 monthSelect.innerHTML = months.map(m => 
                     `<option value="${m}월">${m}월</option>`
                 ).join('');
-                monthSelect.value = months.includes(nowMonth) ? `${nowMonth}월` : `${months[months.length-1]}월`;
+                
+                // 이전에 선택된 월이 있으면 선택, 없으면 첫 번째 월
+                if (months.includes(currentMonth)) {
+                    monthSelect.value = `${currentMonth}월`;
+                } else {
+                    monthSelect.value = `${months[0]}월`;
+                }
             }
             
             updateOrdersList();
@@ -3220,24 +3331,246 @@
             document.querySelectorAll('[data-incentive-dealer]').forEach(sel => {
                 const dealer = sel.dataset.incentiveDealer;
                 const rate = parseFloat(sel.value) || 0;
+                // 월별 키만 저장 (전역값 덮어쓰기 제거)
                 const monthlyKey = getMonthlyIncentiveKey(dealer, year, month);
                 incentiveRates[monthlyKey] = rate;
             });
             await saveIncentiveRatesDB(incentiveRates);
             generateSummary();
+            alert('장려금율이 저장되었습니다!');
+        }
 
-            // 손익관리 탭이 열려있으면 자동 새로고침
-            const pnlTab = document.getElementById('pnl');
-            if (pnlTab && pnlTab.classList.contains('active')) {
-                await loadPnl();
-            }
-            // 원장발송 탭이 열려있으면 자동 새로고침
-            const mailTab = document.getElementById('mailsend');
-            if (mailTab && mailTab.classList.contains('active')) {
-                loadMailSend();
+        // ========================
+        // 매입 거래내역서
+        // ========================
+        async function generatePurchase() {
+            const startDate = document.getElementById('purchaseStartDate').value;
+            const endDate = document.getElementById('purchaseEndDate').value;
+            const brandFilter = document.getElementById('purchaseBrand').value;
+
+            if (!startDate || !endDate) { alert('시작일과 종료일을 선택하세요'); return; }
+
+            showLoading('매입 내역 조회 중...');
+
+            // 발주 기록 전체 수집
+            const allOrders = [];
+            for (let y = 2025; y <= 2030; y++) {
+                for (let m = 1; m <= 12; m++) {
+                    const orders = await loadOrdersBucket(`orders_${y}_${m}월`);
+                    orders.forEach(o => {
+                        if (!o.shippingDate || o.shippingDate < startDate || o.shippingDate > endDate) return;
+                        if (brandFilter && o.brand !== brandFilter) return;
+                        allOrders.push(o);
+                    });
+                }
             }
 
-            alert('장려금율이 저장되었습니다!\n손익관리 및 원장발송에도 자동 반영됩니다.');
+            hideLoading();
+
+            if (!allOrders.length) {
+                document.getElementById('purchaseResult').innerHTML = '<p style="color:#9ca3af; text-align:center; padding:40px;">해당 기간에 매입 내역이 없습니다.</p>';
+                return;
+            }
+
+            // 브랜드별 그룹핑
+            const brandMap = {};
+            allOrders.forEach(o => {
+                const brand = o.brand || '미지정';
+                if (!brandMap[brand]) brandMap[brand] = [];
+                brandMap[brand].push(o);
+            });
+
+            let totalCostAll = 0;
+            let html = `<div id="purchasePrintArea">`;
+
+            // 기간/브랜드 헤더
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <div>
+                    <div style="font-size:18px; font-weight:800; color:#1f2937;">매입 거래내역서</div>
+                    <div style="font-size:13px; color:#6b7280; margin-top:4px;">${startDate} ~ ${endDate} ${brandFilter ? '| ' + brandFilter : '| 전체 브랜드'}</div>
+                </div>
+                <div style="font-size:12px; color:#9ca3af;">발행일: ${new Date().toLocaleDateString('ko-KR')}</div>
+            </div>`;
+
+            Object.entries(brandMap).sort(([a],[b]) => a.localeCompare(b)).forEach(([brand, orders]) => {
+                orders.sort((a,b) => a.shippingDate.localeCompare(b.shippingDate));
+                const brandTotal = orders.reduce((s, o) => s + (parseFloat(o.cost)||0)*(parseFloat(o.qty)||0), 0);
+                totalCostAll += brandTotal;
+
+                html += `<div style="margin-bottom:28px;">
+                    <div style="background:#f8fafc; border-left:4px solid #667eea; padding:10px 16px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:15px; font-weight:700; color:#374151;">${escHtml(brand)}</span>
+                        <span style="font-size:14px; font-weight:700; color:#667eea;">소계: &#x20A9;${Math.round(brandTotal).toLocaleString()}</span>
+                    </div>
+                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <thead>
+                            <tr style="background:#f1f5f9;">
+                                <th style="padding:8px 12px; text-align:left; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:100px;">날짜</th>
+                                <th style="padding:8px 12px; text-align:left; border:1px solid #e2e8f0; font-weight:700; color:#374151;">상품명</th>
+                                <th style="padding:8px 12px; text-align:left; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:120px;">규격</th>
+                                <th style="padding:8px 12px; text-align:right; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:60px;">수량</th>
+                                <th style="padding:8px 12px; text-align:right; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:100px;">매입단가</th>
+                                <th style="padding:8px 12px; text-align:right; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:110px;">매입금액</th>
+                                <th style="padding:8px 12px; text-align:left; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:90px;">거래처</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${orders.map((o, i) => {
+                                const cost = (parseFloat(o.cost)||0) * (parseFloat(o.qty)||0);
+                                const bg = i%2===1 ? 'background:#fafafa;' : '';
+                                return `<tr style="${bg}">
+                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; color:#6b7280;">${o.shippingDate}</td>
+                                    <td style="padding:7px 12px; border:1px solid #e2e8f0;">${escHtml(o.product)}</td>
+                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; color:#6b7280;">${escHtml(o.spec||'-')}</td>
+                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; text-align:right;">${o.qty}</td>
+                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; text-align:right;">&#x20A9;${(parseFloat(o.cost)||0).toLocaleString()}</td>
+                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; text-align:right; font-weight:600;">&#x20A9;${Math.round(cost).toLocaleString()}</td>
+                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; color:#6b7280; font-size:12px;">${escHtml(o.dealer||'-')}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background:#e8f4fd; font-weight:700;">
+                                <td colspan="5" style="padding:8px 12px; border:1px solid #e2e8f0; text-align:right; color:#374151;">브랜드 소계</td>
+                                <td style="padding:8px 12px; border:1px solid #e2e8f0; text-align:right; color:#667eea;">&#x20A9;${Math.round(brandTotal).toLocaleString()}</td>
+                                <td style="padding:8px 12px; border:1px solid #e2e8f0;"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>`;
+            });
+
+            // 총합계
+            html += `<div style="background:#1f2937; color:white; border-radius:10px; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                <span style="font-size:16px; font-weight:700;">총 매입 합계</span>
+                <span style="font-size:20px; font-weight:800;">&#x20A9;${Math.round(totalCostAll).toLocaleString()}</span>
+            </div></div>`;
+
+            document.getElementById('purchaseResult').innerHTML = html;
+        }
+
+        function printPurchase() {
+            const area = document.getElementById('purchasePrintArea');
+            if (!area) { alert('먼저 조회하세요'); return; }
+            const win = window.open('', '_blank');
+            win.document.write(`<html><head><title>매입 거래내역서</title>
+                <style>body{font-family:'맑은 고딕',sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #e2e8f0;padding:7px 10px;font-size:12px;}@media print{body{padding:0;}}</style>
+                <\/head><body>${area.innerHTML}<\/body><\/html>`);
+            win.document.close();
+            setTimeout(() => win.print(), 400);
+        }
+
+        async function refreshAllCostRows() {
+            const year = parseInt(document.getElementById('pnlYear').value);
+            const month = parseInt((document.getElementById('pnlMonth').value || '1월').replace('월',''));
+            const targetYearMonth = `${year}-${String(month).padStart(2,'0')}`;
+            const costMap = {};
+            for (let y = 2025; y <= 2030; y++) {
+                for (let m = 1; m <= 12; m++) {
+                    const orders = await loadOrdersBucket(`orders_${y}_${m}월`);
+                    orders.forEach(o => {
+                        if (!o.shippingDate?.startsWith(targetYearMonth)) return;
+                        const brand = (o.brand || '미지정').trim().toUpperCase();
+                        costMap[brand] = (costMap[brand] || 0) + (parseFloat(o.cost)||0) * (parseFloat(o.qty)||0);
+                    });
+                }
+            }
+            // 해당 인덱스 행의 브랜드명 찾아서 값 업데이트
+            const rows = document.getElementById('pnlCostBody').querySelectorAll('tr');
+            const tr = rows[idx];
+            if (!tr) return;
+            const nameEl = tr.querySelector('span:first-child') || tr.querySelector('input[data-field="name"]');
+            const brand = nameEl ? (nameEl.textContent || nameEl.value || '').trim().toUpperCase() : '';
+            const autoVal = Math.round(costMap[brand] || 0);
+            const amountInput = tr.querySelector('[data-field="amount"]');
+            if (amountInput) {
+                amountInput.value = autoVal.toLocaleString();
+                updatePnlSummary();
+            }
+        }
+
+        // 매입 전체 새로고침
+        async function refreshAllCostRows() {
+            showLoading('매입 새로고침 중...');
+            const year = parseInt(document.getElementById('pnlYear').value);
+            const month = parseInt((document.getElementById('pnlMonth').value || '1월').replace('월',''));
+            const targetYearMonth = `${year}-${String(month).padStart(2,'0')}`;
+            const costMap = {};
+            for (let y = 2025; y <= 2030; y++) {
+                for (let m = 1; m <= 12; m++) {
+                    const orders = await loadOrdersBucket(`orders_${y}_${m}월`);
+                    orders.forEach(o => {
+                        if (!o.shippingDate?.startsWith(targetYearMonth)) return;
+                        const brand = (o.brand || '미지정').trim().toUpperCase();
+                        costMap[brand] = (costMap[brand] || 0) + (parseFloat(o.cost)||0) * (parseFloat(o.qty)||0);
+                    });
+                }
+            }
+            document.getElementById('pnlCostBody').querySelectorAll('tr').forEach(tr => {
+                const nameEl = tr.querySelector('span:first-child') || tr.querySelector('input[data-field="name"]');
+                const brand = nameEl ? (nameEl.textContent || nameEl.value || '').trim().toUpperCase() : '';
+                const autoVal = Math.round(costMap[brand] || 0);
+                const amountInput = tr.querySelector('[data-field="amount"]');
+                if (amountInput && autoVal > 0) {
+                    amountInput.value = autoVal.toLocaleString();
+                }
+            });
+            updatePnlSummary();
+            hideLoading();
+        }
+
+        // ========================
+        // 고정 지출 세팅
+        // ========================
+        async function openFixedExpenseSettings() {
+            const saved = await loadPnlData('fixed_expenses') || [];
+            const container = document.getElementById('fixedExpenseList');
+            container.innerHTML = saved.map((item, idx) => `
+                <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                    <input type="text" value="${item.name}" placeholder="항목명 (예: 물류비)" data-fidx="${idx}" data-field="name"
+                        style="flex:1; padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+                    <input type="text" value="${item.amount.toLocaleString()}" placeholder="금액" data-fidx="${idx}" data-field="amount"
+                        oninput="const v=parseInt(this.value.replace(/,/g,''))||0; this.value=v.toLocaleString();"
+                        style="width:130px; padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; text-align:right;">
+                    <button onclick="this.closest('div').remove()" style="padding:6px 10px; background:#fee2e2; color:#dc2626; border:none; border-radius:6px; cursor:pointer; font-weight:700;">X</button>
+                </div>
+            `).join('');
+            document.getElementById('fixedExpenseModal').classList.add('show');
+        }
+
+        function addFixedExpenseRow() {
+            const container = document.getElementById('fixedExpenseList');
+            const idx = container.children.length;
+            const div = document.createElement('div');
+            div.style.cssText = 'display:flex; gap:8px; margin-bottom:8px; align-items:center;';
+            div.innerHTML = `
+                <input type="text" placeholder="항목명 (예: 물류비)" data-fidx="${idx}" data-field="name"
+                    style="flex:1; padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+                <input type="text" placeholder="금액" data-fidx="${idx}" data-field="amount"
+                    oninput="const v=parseInt(this.value.replace(/,/g,''))||0; this.value=v.toLocaleString();"
+                    style="width:130px; padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; text-align:right;">
+                <button onclick="this.closest('div').remove()" style="padding:6px 10px; background:#fee2e2; color:#dc2626; border:none; border-radius:6px; cursor:pointer; font-weight:700;">X</button>
+            `;
+            container.appendChild(div);
+        }
+
+        async function saveFixedExpenses() {
+            const items = [];
+            document.getElementById('fixedExpenseList').querySelectorAll('div').forEach(row => {
+                const name = row.querySelector('[data-field="name"]')?.value?.trim();
+                const amountStr = row.querySelector('[data-field="amount"]')?.value || '0';
+                const amount = parseInt(amountStr.replace(/,/g,'')) || 0;
+                if (name) items.push({ name, amount });
+            });
+            await savePnlData('fixed_expenses', items);
+            closeModal('fixedExpenseModal');
+            // 손익관리 새로고침 (추가지출에 자동 반영)
+            await loadPnl();
+            alert('고정 지출 항목이 저장되었습니다!');
+        }
+
+        async function loadFixedExpenses() {
+            return await loadPnlData('fixed_expenses') || [];
         }
 
         async function generateSummary() {
@@ -3549,47 +3882,6 @@
                 `;
             });
             document.getElementById('topSchoolsTable').innerHTML = schoolHtml;
-
-            // 총 공급가액 TOP 10 상품
-            const supplyMap = {};
-            const totalSupplyAll = filteredOrders.reduce((s, o) => s + (o.supply || 0), 0);
-            filteredOrders.forEach(order => {
-                const key = order.product;
-                if (!supplyMap[key]) {
-                    supplyMap[key] = { brand: order.brand || '-', qty: 0, supply: 0 };
-                }
-                supplyMap[key].qty += parseFloat(order.qty) || 0;
-                supplyMap[key].supply += parseFloat(order.supply) || 0;
-            });
-
-            const topSupply = Object.entries(supplyMap)
-                .map(([name, data]) => ({ name, ...data }))
-                .sort((a, b) => b.supply - a.supply)
-                .slice(0, 10);
-
-            let supplyHtml = '';
-            topSupply.forEach((item, idx) => {
-                const pct = totalSupplyAll > 0 ? ((item.supply / totalSupplyAll) * 100).toFixed(1) : 0;
-                const barWidth = Math.round((item.supply / topSupply[0].supply) * 100);
-                supplyHtml += `
-                    <tr>
-                        <td style="text-align:center; font-weight:700; color:${idx < 3 ? '#f59e0b' : '#6b7280'};">${idx + 1}</td>
-                        <td>${escHtml(item.name)}</td>
-                        <td style="text-align:center; color:#6b7280;">${escHtml(item.brand)}</td>
-                        <td class="amount">${item.qty.toLocaleString()}</td>
-                        <td class="amount" style="font-weight:700;">&#x20A9;${Math.round(item.supply).toLocaleString()}</td>
-                        <td style="text-align:right;">
-                            <div style="display:flex; align-items:center; gap:6px; justify-content:flex-end;">
-                                <div style="width:60px; height:6px; background:#f3f4f6; border-radius:3px; overflow:hidden;">
-                                    <div style="width:${barWidth}%; height:100%; background:#667eea; border-radius:3px;"></div>
-                                </div>
-                                <span style="font-size:12px; color:#374151; min-width:36px;">${pct}%</span>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-            document.getElementById('topSupplyTable').innerHTML = supplyHtml || '<tr><td colspan="6" style="text-align:center; color:#999;">데이터 없음</td></tr>';
         }
         
         async function editIncentives() {
@@ -3736,6 +4028,14 @@
             const savedCost = saved.cost || [];
             const savedExtra = saved.extra || [];
 
+            // 고정 지출 자동 병합 (없는 항목만 추가)
+            const fixedExpenses = await loadFixedExpenses();
+            fixedExpenses.forEach(fixed => {
+                if (!savedExtra.find(r => r.name === fixed.name)) {
+                    savedExtra.push({ name: fixed.name, amount: fixed.amount, auto: false, fixed: true });
+                }
+            });
+
             const revenueRows = [];
             Object.entries(revenueMap).forEach(([name, amount]) => {
                 const saved = savedRevenue.find(r => r.name === name && r.auto);
@@ -3771,6 +4071,8 @@
                 body.innerHTML = '<tr><td colspan="6" style="padding:20px; text-align:center; color:#9ca3af; font-size:13px;">데이터 없음</td></tr>';
                 return;
             }
+            // 매출액 높은 순 정렬
+            rows = [...rows].sort((a, b) => b.amount - a.amount);
             body.innerHTML = rows.map((row, idx) => {
                 const rate = parseFloat(row.rate || 0);
                 const incentive = Math.round(row.amount * rate);
@@ -3792,8 +4094,8 @@
                             <option value="0.10" ${ratePct==='10'?'selected':''}>10%</option>
                         </select>
                     </td>
-                    <td style="padding:10px 14px;text-align:right;color:#ef4444;font-size:13px;" id="pnl_incentive_${idx}">${incentive>0?'-₩'+incentive.toLocaleString():'<span style="color:#d1d5db;">-</span>'}</td>
-                    <td style="padding:10px 14px;text-align:right;font-weight:700;font-size:14px;color:#065f46;" id="pnl_net_${idx}">₩${net.toLocaleString()}</td>
+                    <td style="padding:10px 14px;text-align:right;color:#ef4444;font-size:13px;" id="pnl_incentive_${idx}">${incentive>0?'-&#x20A9;'+incentive.toLocaleString():'<span style="color:#d1d5db;">-</span>'}</td>
+                    <td style="padding:10px 14px;text-align:right;font-weight:700;font-size:14px;color:#065f46;" id="pnl_net_${idx}">&#x20A9;${net.toLocaleString()}</td>
                     <td style="padding:6px 10px;text-align:center;"><button onclick="deletePnlRow('revenue',${idx})" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:15px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">X</button></td>
                 </tr>`;
             }).join('');
@@ -3805,7 +4107,7 @@
             const textColor = type === 'cost' ? '#92400e' : '#991b1b';
             const body = document.getElementById(bodyId);
             if (!rows.length) {
-                body.innerHTML = `<tr><td colspan="3" style="padding:20px;text-align:center;color:#9ca3af;font-size:13px;">데이터 없음</td></tr>`;
+                body.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:#9ca3af;font-size:13px;">데이터 없음</td></tr>`;
                 return;
             }
             body.innerHTML = rows.map((row, idx) => {
@@ -3813,9 +4115,12 @@
                 const nameCell = row.auto
                     ? `<span style="font-size:13px;color:#374151;">${row.name}</span><span style="font-size:10px;color:#9ca3af;background:#f3f4f6;padding:1px 6px;border-radius:3px;margin-left:6px;">자동</span>`
                     : `<input type="text" value="${row.name}" data-type="${type}" data-idx="${idx}" data-field="name" style="border:none;background:transparent;font-size:13px;outline:none;width:100%;color:#374151;">`;
+                // 매입(cost)은 자동행도 직접 수정 가능
+                const amountStyle = type === 'cost' ? `border:1px solid #fde68a;border-radius:4px;padding:2px 6px;background:white;` : 'border:none;background:transparent;';
                 return `<tr style="border-bottom:1px solid ${borderColor};${bg}">
                     <td style="padding:10px 14px;">${nameCell}</td>
-                    <td style="padding:10px 14px;text-align:right;"><input type="text" value="${row.amount.toLocaleString()}" data-type="${type}" data-idx="${idx}" data-field="amount" oninput="formatPnlInput(this)" onchange="formatPnlInput(this)" style="border:none;background:transparent;font-size:13px;text-align:right;outline:none;width:100%;color:${textColor};font-weight:600;"></td>
+                    <td style="padding:10px 14px;text-align:right;"><input type="text" value="${row.amount.toLocaleString()}" data-type="${type}" data-idx="${idx}" data-field="amount" oninput="formatPnlInput(this)" onchange="formatPnlInput(this)" style="${amountStyle}font-size:13px;text-align:right;outline:none;width:100%;color:${textColor};font-weight:600;"></td>
+                    ${type === 'cost' ? `<td style="padding:6px 10px;text-align:center;"><button onclick="refreshCostRow(${idx})" title="발주기록에서 자동 계산값으로 복원" style="background:none;border:none;cursor:pointer;color:#f59e0b;font-size:13px;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">&#8635;</button></td>` : ''}
                     <td style="padding:6px 10px;text-align:center;"><button onclick="deletePnlRow('${type}',${idx})" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:15px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">X</button></td>
                 </tr>`;
             }).join('');
@@ -3845,6 +4150,152 @@
             const num = parseInt((input.value||'0').replace(/,/g,'')) || 0;
             input.value = num.toLocaleString();
             updatePnlSummary();
+        }
+
+        // ========================
+        // 매입 내역서 함수들
+        // ========================
+        window._purchaseOrders = [];
+
+        async function loadPurchase() {
+            const year = parseInt(document.getElementById('purchaseYear').value);
+            const month = parseInt((document.getElementById('purchaseMonth').value || '1월').replace('월',''));
+            const targetYearMonth = `${year}-${String(month).padStart(2,'0')}`;
+
+            const orders = [];
+            for (let y = 2025; y <= 2030; y++) {
+                for (let m = 1; m <= 12; m++) {
+                    const key = `orders_${y}_${m}월`;
+                    const bucket = await loadOrdersBucket(key);
+                    bucket.forEach(o => {
+                        if (o.shippingDate?.startsWith(targetYearMonth)) orders.push(o);
+                    });
+                }
+            }
+            orders.sort((a, b) => a.shippingDate.localeCompare(b.shippingDate));
+            window._purchaseOrders = orders;
+
+            // 브랜드 필터 옵션
+            const brands = [...new Set(orders.map(o => (o.brand||'').trim().toUpperCase()).filter(Boolean))].sort();
+            const sel = document.getElementById('purchaseBrand');
+            const prev = sel.value;
+            sel.innerHTML = '<option value="">전체</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+            sel.value = prev;
+
+            renderPurchaseTable();
+        }
+
+        function renderPurchaseTable() {
+            const brandFilter = (document.getElementById('purchaseBrand')?.value || '').toUpperCase();
+            let orders = window._purchaseOrders;
+            if (brandFilter) orders = orders.filter(o => (o.brand||'').trim().toUpperCase() === brandFilter);
+
+            let totalQty = 0, totalCost = 0;
+            const tbody = document.getElementById('purchaseTable');
+
+            if (!orders.length) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#999;padding:20px;">데이터 없음</td></tr>';
+                document.getElementById('purchaseTotalQty').textContent = '-';
+                document.getElementById('purchaseTotalCost').textContent = '-';
+                return;
+            }
+
+            tbody.innerHTML = orders.map(o => {
+                const qty = parseFloat(o.qty) || 0;
+                const costPerUnit = parseFloat(o.cost) || 0;           // 단가(VAT포함) = 매입단가
+                const costExVat = Math.round(costPerUnit / 1.1);        // 단가(VAT제외)
+                const totalCostRow = Math.round(costPerUnit * qty);     // 매입가(VAT포함)
+                totalQty += qty;
+                totalCost += totalCostRow;
+                return `<tr>
+                    <td>${escHtml(o.shippingDate||'-')}</td>
+                    <td>${escHtml((o.brand||'-').toUpperCase())}</td>
+                    <td>${escHtml(o.product||'-')}</td>
+                    <td>${escHtml(o.spec||'-')}</td>
+                    <td class="amount">${qty.toLocaleString()}</td>
+                    <td class="amount">&#x20A9;${costPerUnit.toLocaleString()}</td>
+                    <td class="amount">&#x20A9;${costExVat.toLocaleString()}</td>
+                    <td class="amount" style="font-weight:700;">&#x20A9;${totalCostRow.toLocaleString()}</td>
+                    <td>${escHtml(o.school||'-')}</td>
+                    <td>${escHtml(o.dealer||'-')}</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('purchaseTotalQty').textContent = totalQty.toLocaleString();
+            document.getElementById('purchaseTotalCost').innerHTML = `&#x20A9;${totalCost.toLocaleString()}`;
+
+            // 요약 카드
+            const brands = {};
+            orders.forEach(o => {
+                const b = (o.brand||'미지정').trim().toUpperCase();
+                brands[b] = (brands[b]||0) + (parseFloat(o.cost)||0) * (parseFloat(o.qty)||0);
+            });
+            document.getElementById('purchaseSummary').innerHTML = Object.entries(brands)
+                .sort((a,b) => b[1]-a[1])
+                .map(([b, amt]) => `
+                    <div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:10px 16px;border-top:3px solid #667eea;">
+                        <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">${b}</div>
+                        <div style="font-size:15px;font-weight:700;color:#374151;">&#x20A9;${Math.round(amt).toLocaleString()}</div>
+                    </div>
+                `).join('');
+        }
+
+        function downloadPurchaseCSV() {
+            const brandFilter = (document.getElementById('purchaseBrand')?.value || '').toUpperCase();
+            let orders = window._purchaseOrders;
+            if (brandFilter) orders = orders.filter(o => (o.brand||'').trim().toUpperCase() === brandFilter);
+            if (!orders.length) { alert('데이터가 없습니다'); return; }
+
+            let csv = '\uFEFF급식일자,브랜드,상품명,규격,수량,단가(VAT포함),단가(VAT제외),매입가(VAT포함),학교명,납품업체\n';
+            orders.forEach(o => {
+                const qty = parseFloat(o.qty) || 0;
+                const cost = parseFloat(o.cost) || 0;
+                const costEx = Math.round(cost / 1.1);
+                const totalCostRow = Math.round(cost * qty);
+                csv += `${o.shippingDate||''},${(o.brand||'').toUpperCase()},"${o.product||''}","${o.spec||''}",${qty},${cost},${costEx},${totalCostRow},"${o.school||''}","${o.dealer||''}"\n`;
+            });
+
+            const year = document.getElementById('purchaseYear').value;
+            const month = document.getElementById('purchaseMonth').value;
+            downloadCSV(csv, `쏘울푸드_매입내역서_${year}년_${month}.csv`);
+        }
+
+        async function refreshCostRow(idx) {
+            // 발주기록에서 해당 브랜드 실제 매입액 재계산
+            const year = parseInt(document.getElementById('pnlYear').value);
+            const month = parseInt((document.getElementById('pnlMonth').value || '1월').replace('월',''));
+            const targetYearMonth = `${year}-${String(month).padStart(2,'0')}`;
+
+            // 해당 행의 브랜드명 가져오기
+            const rows = document.getElementById('pnlCostBody').querySelectorAll('tr');
+            const tr = rows[idx];
+            if (!tr) return;
+            const nameEl = tr.querySelector('[data-field="name"]') || tr.querySelector('span');
+            const brandName = nameEl ? (nameEl.value || nameEl.textContent).trim().replace('자동','').trim() : '';
+            if (!brandName) return;
+
+            // 발주 기록에서 해당 브랜드 매입액 집계
+            let total = 0;
+            for (let y = 2025; y <= 2030; y++) {
+                for (let m = 1; m <= 12; m++) {
+                    const key = `orders_${y}_${m}월`;
+                    const orders = await loadOrdersBucket(key);
+                    orders.forEach(order => {
+                        if (!order.shippingDate?.startsWith(targetYearMonth)) return;
+                        const b = (order.brand || '').trim().toUpperCase();
+                        if (b === brandName.toUpperCase()) {
+                            total += (parseFloat(order.cost) || 0) * (parseFloat(order.qty) || 0);
+                        }
+                    });
+                }
+            }
+
+            const amountEl = tr.querySelector('[data-field="amount"]');
+            if (amountEl) {
+                amountEl.value = Math.round(total).toLocaleString();
+                updatePnlSummary();
+            }
+            alert(`${brandName} 매입액을 발주기록 기준으로 복원했습니다.\n₩${Math.round(total).toLocaleString()}`);
         }
 
         function getPnlRows(type) {
