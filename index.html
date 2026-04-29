@@ -4027,9 +4027,10 @@
             const savedCost = saved.cost || [];
             const savedExtra = saved.extra || [];
 
-            // 고정 지출 자동 병합 (없는 항목만 추가)
+            // 고정 지출 자동 병합 (저장된 항목이 없을 때만 추가)
             const fixedExpenses = await loadFixedExpenses();
             fixedExpenses.forEach(fixed => {
+                // 이미 저장된 항목이면 스킵 (저장값 유지)
                 if (!savedExtra.find(r => r.name === fixed.name)) {
                     savedExtra.push({ name: fixed.name, amount: fixed.amount, auto: false, fixed: true });
                 }
@@ -4048,11 +4049,10 @@
 
             const costRows = [];
             Object.entries(costMap).forEach(([name, amount]) => {
-                // 브랜드명 변경 대응: 정확한 이름 매칭 우선, 없으면 자동값 사용
-                const manual = savedCost.find(r => r.name === name && r.auto);
-                const autoAmount = Math.round(amount);
-                // 저장된 금액이 있고 수동으로 수정한 경우만 저장값 사용, 아니면 발주기록 집계값
-                const finalAmount = (manual && manual.manuallyEdited) ? manual.amount : autoAmount;
+                // 저장된 값이 있으면 우선 사용 (수동 수정 보존)
+                // 없으면 발주기록 집계값 사용
+                const savedRow = savedCost.find(r => r.name === name && r.auto);
+                const finalAmount = savedRow ? savedRow.amount : Math.round(amount);
                 costRows.push({ name, amount: finalAmount, auto: true });
             });
             // 수동 추가 행 (auto:false)
