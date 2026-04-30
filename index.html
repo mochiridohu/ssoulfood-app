@@ -1759,7 +1759,7 @@
             else if (tabName === 'pnl') loadPnl();
             else if (tabName === 'mailsend') loadMailSend();
             else if (tabName === 'purchase') loadPurchase();
-            else if (tabName === 'purchase') generatePurchase();
+            else if (tabName === 'purchase') loadPurchase();
             // 거래명세표는 조회 버튼을 통해서만 거래처가 로드되도록
         }
         
@@ -3310,123 +3310,6 @@
         // ========================
         // 매입 거래내역서
         // ========================
-        async function generatePurchase() {
-            const startDate = document.getElementById('purchaseStartDate').value;
-            const endDate = document.getElementById('purchaseEndDate').value;
-            const brandFilter = document.getElementById('purchaseBrand').value;
-
-            if (!startDate || !endDate) { alert('시작일과 종료일을 선택하세요'); return; }
-
-            showLoading('매입 내역 조회 중...');
-
-            // 발주 기록 전체 수집
-            const allOrders = [];
-            for (let y = 2025; y <= 2030; y++) {
-                for (let m = 1; m <= 12; m++) {
-                    const orders = await loadOrdersBucket(`orders_${y}_${m}월`);
-                    orders.forEach(o => {
-                        if (!o.shippingDate || o.shippingDate < startDate || o.shippingDate > endDate) return;
-                        if (brandFilter && o.brand !== brandFilter) return;
-                        allOrders.push(o);
-                    });
-                }
-            }
-
-            hideLoading();
-
-            if (!allOrders.length) {
-                document.getElementById('purchaseResult').innerHTML = '<p style="color:#9ca3af; text-align:center; padding:40px;">해당 기간에 매입 내역이 없습니다.</p>';
-                return;
-            }
-
-            // 브랜드별 그룹핑
-            const brandMap = {};
-            allOrders.forEach(o => {
-                const brand = o.brand || '미지정';
-                if (!brandMap[brand]) brandMap[brand] = [];
-                brandMap[brand].push(o);
-            });
-
-            let totalCostAll = 0;
-            let html = `<div id="purchasePrintArea">`;
-
-            // 기간/브랜드 헤더
-            html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <div>
-                    <div style="font-size:18px; font-weight:800; color:#1f2937;">매입 거래내역서</div>
-                    <div style="font-size:13px; color:#6b7280; margin-top:4px;">${startDate} ~ ${endDate} ${brandFilter ? '| ' + brandFilter : '| 전체 브랜드'}</div>
-                </div>
-                <div style="font-size:12px; color:#9ca3af;">발행일: ${new Date().toLocaleDateString('ko-KR')}</div>
-            </div>`;
-
-            Object.entries(brandMap).sort(([a],[b]) => a.localeCompare(b)).forEach(([brand, orders]) => {
-                orders.sort((a,b) => a.shippingDate.localeCompare(b.shippingDate));
-                const brandTotal = orders.reduce((s, o) => s + (parseFloat(o.cost)||0)*(parseFloat(o.qty)||0), 0);
-                totalCostAll += brandTotal;
-
-                html += `<div style="margin-bottom:28px;">
-                    <div style="background:#f8fafc; border-left:4px solid #667eea; padding:10px 16px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:15px; font-weight:700; color:#374151;">${escHtml(brand)}</span>
-                        <span style="font-size:14px; font-weight:700; color:#667eea;">소계: &#x20A9;${Math.round(brandTotal).toLocaleString()}</span>
-                    </div>
-                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                        <thead>
-                            <tr style="background:#f1f5f9;">
-                                <th style="padding:8px 12px; text-align:left; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:100px;">날짜</th>
-                                <th style="padding:8px 12px; text-align:left; border:1px solid #e2e8f0; font-weight:700; color:#374151;">상품명</th>
-                                <th style="padding:8px 12px; text-align:left; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:120px;">규격</th>
-                                <th style="padding:8px 12px; text-align:right; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:60px;">수량</th>
-                                <th style="padding:8px 12px; text-align:right; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:100px;">매입단가</th>
-                                <th style="padding:8px 12px; text-align:right; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:110px;">매입금액</th>
-                                <th style="padding:8px 12px; text-align:left; border:1px solid #e2e8f0; font-weight:700; color:#374151; width:90px;">거래처</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${orders.map((o, i) => {
-                                const cost = (parseFloat(o.cost)||0) * (parseFloat(o.qty)||0);
-                                const bg = i%2===1 ? 'background:#fafafa;' : '';
-                                return `<tr style="${bg}">
-                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; color:#6b7280;">${o.shippingDate}</td>
-                                    <td style="padding:7px 12px; border:1px solid #e2e8f0;">${escHtml(o.product)}</td>
-                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; color:#6b7280;">${escHtml(o.spec||'-')}</td>
-                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; text-align:right;">${o.qty}</td>
-                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; text-align:right;">&#x20A9;${(parseFloat(o.cost)||0).toLocaleString()}</td>
-                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; text-align:right; font-weight:600;">&#x20A9;${Math.round(cost).toLocaleString()}</td>
-                                    <td style="padding:7px 12px; border:1px solid #e2e8f0; color:#6b7280; font-size:12px;">${escHtml(o.dealer||'-')}</td>
-                                </tr>`;
-                            }).join('')}
-                        </tbody>
-                        <tfoot>
-                            <tr style="background:#e8f4fd; font-weight:700;">
-                                <td colspan="5" style="padding:8px 12px; border:1px solid #e2e8f0; text-align:right; color:#374151;">브랜드 소계</td>
-                                <td style="padding:8px 12px; border:1px solid #e2e8f0; text-align:right; color:#667eea;">&#x20A9;${Math.round(brandTotal).toLocaleString()}</td>
-                                <td style="padding:8px 12px; border:1px solid #e2e8f0;"></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>`;
-            });
-
-            // 총합계
-            html += `<div style="background:#1f2937; color:white; border-radius:10px; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-                <span style="font-size:16px; font-weight:700;">총 매입 합계</span>
-                <span style="font-size:20px; font-weight:800;">&#x20A9;${Math.round(totalCostAll).toLocaleString()}</span>
-            </div></div>`;
-
-            document.getElementById('purchaseResult').innerHTML = html;
-        }
-
-        function printPurchase() {
-            const area = document.getElementById('purchasePrintArea');
-            if (!area) { alert('먼저 조회하세요'); return; }
-            const win = window.open('', '_blank');
-            win.document.write(`<html><head><title>매입 거래내역서</title>
-                <style>body{font-family:'맑은 고딕',sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #e2e8f0;padding:7px 10px;font-size:12px;}@media print{body{padding:0;}}</style>
-                <\/head><body>${area.innerHTML}<\/body><\/html>`);
-            win.document.close();
-            setTimeout(() => win.print(), 400);
-        }
-
         async function refreshAllCostRows() {
             const year = parseInt(document.getElementById('pnlYear').value);
             const month = parseInt((document.getElementById('pnlMonth').value || '1월').replace('월',''));
@@ -4272,6 +4155,8 @@
             if (type === 'revenue') {
                 const rows = [];
                 document.getElementById('pnlRevenueBody').querySelectorAll('tr').forEach(tr => {
+                    // colspan 행(데이터없음) 스킵
+                    if (tr.querySelector('td[colspan]')) return;
                     const amountEl = tr.querySelector('[data-field="amount"]');
                     const rateEl = tr.querySelector('[data-field="rate"]');
                     const nameInput = tr.querySelector('input[data-field="name"]');
@@ -4280,7 +4165,6 @@
                     if (nameInput) {
                         name = nameInput.value.trim();
                     } else {
-                        // span에서 이름만 읽기 (자동 뱃지 제외)
                         const nameSpan = tr.querySelector('td:first-child span:first-child');
                         name = nameSpan ? nameSpan.textContent.trim() : '';
                     }
@@ -4294,6 +4178,8 @@
                 const bodyId = type === 'cost' ? 'pnlCostBody' : 'pnlExtraBody';
                 const rows = [];
                 document.getElementById(bodyId).querySelectorAll('tr').forEach(tr => {
+                    // colspan 행(데이터없음) 스킵
+                    if (tr.querySelector('td[colspan]')) return;
                     const amountEl = tr.querySelector('[data-field="amount"]');
                     const nameInput = tr.querySelector('input[data-field="name"]');
                     if (!amountEl) return;
@@ -4301,7 +4187,6 @@
                     if (nameInput) {
                         name = nameInput.value.trim();
                     } else {
-                        // span에서 이름만 읽기 (자동 뱃지 제외)
                         const nameSpan = tr.querySelector('td:first-child span:first-child');
                         name = nameSpan ? nameSpan.textContent.trim() : '';
                     }
@@ -4969,8 +4854,12 @@ window.onload = function() { setTimeout(function() { window.print(); }, 600); };
             const totalVAT = rows.reduce((s, r) => s + r.vat, 0);
             const totalWithVAT = totalSupply + totalVAT;
 
-            const incentiveRate = parseFloat(incentiveRates[dealerName] || 0);
-            const incentive = Math.round(totalWithVAT * incentiveRate);  // 공급가+부가세 합계 기준
+            // 장려율: 월별 키 기반으로 가져오기 (startDate에서 연/월 추출)
+            const stDate = new Date(startDate + 'T00:00:00');
+            const stYear = String(stDate.getFullYear());
+            const stMonth = `${stDate.getMonth() + 1}월`;
+            const incentiveRate = getMonthlyIncentiveRate(dealerName, stYear, stMonth);
+            const incentive = Math.round(totalWithVAT * incentiveRate);
             const finalAmount = totalWithVAT - incentive;
             const koreanAmount = numberToKorean(finalAmount);
             const now = new Date();
