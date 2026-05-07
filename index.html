@@ -1347,8 +1347,23 @@
     
     <!-- 발주 수정 모달 -->
     <div id="orderModal" class="modal">
-        <div class="modal-content" style="max-width:560px;">
+        <div class="modal-content" style="max-width:580px;">
             <div class="modal-header">발주 수정</div>
+
+            <!-- 상품 검색 -->
+            <div style="margin-bottom:12px; position:relative;">
+                <label class="form-label">상품 검색 <span style="color:#9ca3af; font-weight:400;">(상품명·코드·규격으로 검색하면 자동 입력)</span></label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="editProductSearch" placeholder="상품명, 코드, 규격으로 검색..."
+                        oninput="updateEditProductSearch(this.value)"
+                        style="flex:1; padding:9px 12px; border:1px solid #667eea; border-radius:6px; font-size:13px;">
+                    <button onclick="document.getElementById('editProductSearch').value=''; document.getElementById('editProductList').innerHTML=''; document.getElementById('editProductList').style.display='none';"
+                        style="padding:8px 12px; background:#f3f4f6; border:none; border-radius:6px; cursor:pointer; font-size:12px; color:#6b7280;">초기화</button>
+                </div>
+                <!-- 검색 결과 드롭다운 -->
+                <div id="editProductList" style="display:none; position:absolute; z-index:1000; width:100%; background:white; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.12); max-height:220px; overflow-y:auto; margin-top:4px;"></div>
+            </div>
+
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:4px;">
                 <div>
                     <label class="form-label">급식일자</label>
@@ -2608,9 +2623,55 @@
             };
         }
 
+        function updateEditProductSearch(query) {
+            const list = document.getElementById('editProductList');
+            if (!query.trim()) { list.style.display = 'none'; return; }
+
+            const filtered = allProducts.filter(p =>
+                p.name.includes(query) || p.code.includes(query) || p.spec.includes(query)
+            ).slice(0, 15);
+
+            if (!filtered.length) { list.style.display = 'none'; return; }
+
+            list.innerHTML = filtered.map((p, idx) => `
+                <div data-epidx="${idx}" style="padding:10px 14px; cursor:pointer; border-bottom:1px solid #f3f4f6; transition:background 0.1s;"
+                    onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='white'">
+                    <div style="font-size:11px; color:#667eea; font-weight:600; margin-bottom:2px;">${escHtml(p.code)}</div>
+                    <div style="font-size:13px; color:#1f2937; font-weight:600;">${escHtml(p.name)}</div>
+                    <div style="font-size:11px; color:#6b7280;">${escHtml(p.spec)} · ₩${p.price.toLocaleString()}</div>
+                </div>
+            `).join('');
+
+            list.style.display = 'block';
+
+            // 클릭 이벤트
+            list.querySelectorAll('div[data-epidx]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const p = filtered[parseInt(el.dataset.epidx)];
+                    selectEditProduct(p);
+                });
+            });
+        }
+
+        function selectEditProduct(p) {
+            document.getElementById('editOrderCode').value = p.code;
+            document.getElementById('editOrderProduct').value = p.name;
+            document.getElementById('editOrderSpec').value = p.spec || '';
+            document.getElementById('editOrderBrand').value = extractBrand(p.code);
+            document.getElementById('editOrderPrice').value = p.price;
+            // 검색창 닫기
+            document.getElementById('editProductSearch').value = '';
+            document.getElementById('editProductList').style.display = 'none';
+            // 수량 포커스
+            document.getElementById('editOrderQty').focus();
+        }
+
         function openOrderEditModal(order, key, idx) {
             window.editingOrderKey = key;
             window.editingOrderIdx = idx;
+            // 검색창 초기화
+            document.getElementById('editProductSearch').value = '';
+            document.getElementById('editProductList').style.display = 'none';
             document.getElementById('editOrderDate').value = order.shippingDate || '';
             document.getElementById('editOrderDealer').value = order.dealer || '';
             document.getElementById('editOrderBrand').value = order.brand || '';
