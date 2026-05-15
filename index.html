@@ -2398,25 +2398,49 @@
         }
         
         async function saveDealerModal() {
-            const idx = window.editingDealerIdx;
-            
-            if (idx !== undefined) {
-                // 수정 모드
-                allDealers[idx].name = document.getElementById('dealerName').value;
-                allDealers[idx].ceo = document.getElementById('dealerCeo').value;
-                allDealers[idx].phone = document.getElementById('dealerPhone').value;
-                allDealers[idx].email = document.getElementById('dealerEmail').value;
-                allDealers[idx].fax = document.getElementById('dealerFax').value;
-                allDealers[idx].bizNo = document.getElementById('dealerBizNo').value;
-                allDealers[idx].address = document.getElementById('dealerAddress').value;
-                
-                await saveDealers(allDealers);
-                window.editingDealerIdx = undefined;
-                closeModal('dealerModal');
-                updateDealersList();
-                updateDealerSelect();
-                alert('거래처가 수정되었습니다');
+            const name = document.getElementById('dealerName').value.trim();
+            if (!name) { alert('거래처명을 입력하세요'); return; }
+
+            const dealerData = {
+                name,
+                ceo: document.getElementById('dealerCeo').value,
+                phone: document.getElementById('dealerPhone').value,
+                email: document.getElementById('dealerEmail').value,
+                fax: document.getElementById('dealerFax').value,
+                bizNo: document.getElementById('dealerBizNo').value,
+                address: document.getElementById('dealerAddress').value
+            };
+
+            const { error } = await db.from('dealers').upsert({
+                name: dealerData.name,
+                ceo: dealerData.ceo || '',
+                phone: dealerData.phone || '',
+                email: dealerData.email || '',
+                fax: dealerData.fax || '',
+                biz_no: dealerData.bizNo || '',
+                address: dealerData.address || ''
+            }, { onConflict: 'name' });
+
+            if (error) {
+                alert('거래처 저장 오류: ' + error.message);
+                return;
             }
+
+            // 메모리 업데이트
+            const idx = window.editingDealerIdx;
+            if (idx !== undefined) {
+                allDealers[idx] = dealerData;
+            } else {
+                const existing = allDealers.findIndex(d => d.name === name);
+                if (existing >= 0) allDealers[existing] = dealerData;
+                else allDealers.push(dealerData);
+            }
+
+            window.editingDealerIdx = undefined;
+            closeModal('dealerModal');
+            updateDealersList();
+            updateDealerSelect();
+            alert('거래처가 저장되었습니다!');
         }
         
         async function deleteDealer(idx) {
