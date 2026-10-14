@@ -714,11 +714,20 @@
                         <span class="search-icon">🔍</span>
                     </div>
                 </div>
-                
+
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <span style="font-size:13px; color:#6b7280;">선택 <b id="productSelCount" style="color:#ef4444;">0</b>개</span>
+                    <button class="btn product-sel-btn" onclick="setSelectedProductsTaxType('과세')" disabled style="opacity:0.5; background:#e0e7ff; color:#3730a3;">선택 → 과세</button>
+                    <button class="btn product-sel-btn" onclick="setSelectedProductsTaxType('비과세')" disabled style="opacity:0.5; background:#fef3c7; color:#92400e;">선택 → 비과세</button>
+                    <button class="btn btn-danger product-sel-btn" id="productSelDeleteBtn" onclick="deleteSelectedProducts()" disabled style="opacity:0.5;">🗑️ 선택 삭제</button>
+                    <span style="font-size:12px; color:#9ca3af;">맨 위 체크박스 = 지금 보이는 목록(검색 결과) 전체 선택</span>
+                </div>
+
                 <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
+                                <th style="width:36px; text-align:center;"><input type="checkbox" id="productSelAll" onchange="toggleAllProductSelection(this.checked)" style="width:16px; height:16px; cursor:pointer;"></th>
                                 <th>상품코드</th>
                                 <th>상품명</th>
                                 <th>규격</th>
@@ -1523,6 +1532,7 @@
         let allDealers = [];
         let selectedProduct = null;
         let editingProductIdx = null;
+        const selectedProducts = new Set(); // 상품 관리 탭에서 체크한 상품
         let incentiveRates = {};
         
         // ========================
@@ -1846,6 +1856,8 @@
                 updateProductSearch(e.target.value);
             });
             document.getElementById('productSearchTab').addEventListener('input', (e) => {
+                // 검색어가 바뀌면 선택 해제 (화면에 안 보이는 상품이 같이 삭제되는 것 방지)
+                selectedProducts.clear();
                 updateProductsTable(e.target.value);
             });
             document.getElementById('dealerSearch').addEventListener('input', (e) => {
@@ -1983,11 +1995,17 @@
                 ) : 
                 allProducts;
             
+            // 목록에 없는 상품은 선택에서 제거
+            const filteredSet = new Set(filtered);
+            [...selectedProducts].forEach(p => { if (!filteredSet.has(p)) selectedProducts.delete(p); });
+            window._productsFiltered = filtered;
+
             let html = '';
             filtered.forEach((p, idx) => {
                 const actualIdx = allProducts.indexOf(p);
                 html += `
                     <tr>
+                        <td style="text-align:center;"><input type="checkbox" class="product-sel" data-pidx="${actualIdx}" ${selectedProducts.has(p) ? 'checked' : ''} onchange="toggleProductSelection(${actualIdx}, this.checked)" style="width:16px; height:16px; cursor:pointer;"></td>
                         <td>${escHtml(p.code)}</td>
                         <td>${escHtml(p.name)}</td>
                         <td>${escHtml(p.spec)}</td>
@@ -2003,11 +2021,66 @@
                 `;
             });
             
-            document.getElementById('productsTable').innerHTML = html || '<tr><td colspan="8" class="empty">상품이 없습니다</td></tr>';
+            document.getElementById('productsTable').innerHTML = html || '<tr><td colspan="9" class="empty">상품이 없습니다</td></tr>';
+            updateProductSelectionUI();
         }
-        
+
         function updateProductsList() {
-            updateProductsTable();
+            // 검색어 유지한 채로 목록 갱신
+            updateProductsTable(document.getElementById('productSearchTab')?.value || '');
+        }
+
+        // ===== 상품 선택 삭제 =====
+        function toggleProductSelection(idx, checked) {
+            const p = allProducts[idx];
+            if (!p) return;
+            if (checked) selectedProducts.add(p); else selectedProducts.delete(p);
+            updateProductSelectionUI();
+        }
+
+        function toggleAllProductSelection(checked) {
+            (window._productsFiltered || []).forEach(p => checked ? selectedProducts.add(p) : selectedProducts.delete(p));
+            document.querySelectorAll('#productsTable .product-sel').forEach(cb => cb.checked = checked);
+            updateProductSelectionUI();
+        }
+
+        function updateProductSelectionUI() {
+            const n = selectedProducts.size;
+            const total = (window._productsFiltered || []).length;
+            document.getElementById('productSelCount').textContent = n;
+            document.querySelectorAll('.product-sel-btn').forEach(btn => {
+                btn.disabled = n === 0;
+                btn.style.opacity = n === 0 ? '0.5' : '1';
+            });
+            const all = document.getElementById('productSelAll');
+            all.checked = total > 0 && n === total;
+            all.indeterminate = n > 0 && n < total;
+        }
+
+        async function setSelectedProductsTaxType(taxType) {
+            const targets = [...selectedProducts].filter(p => normalizeTaxType(p.taxType) !== taxType);
+            if (!selectedProducts.size) return;
+            if (!targets.length) { alert(`선택한 상품이 이미 모두 '${taxType}'입니다`); return; }
+            if (!confirm(`선택한 상품 중 ${targets.length}개를 '${taxType}'(으)로 변경하시겠습니까?`)) return;
+            targets.forEach(p => p.taxType = taxType);
+            await saveProducts(allProducts);
+            selectedProducts.clear();
+            updateProductsList();
+            alert(`${targets.length}개 상품이 '${taxType}'(으)로 변경되었습니다`);
+        }
+
+        async function deleteSelectedProducts() {
+            const n = selectedProducts.size;
+            if (!n) return;
+            const preview = [...selectedProducts].slice(0, 10).map(p => `- ${p.code} ${p.name}`).join('\n');
+            const more = n > 10 ? `\n... 외 ${n - 10}개` : '';
+            if (!confirm(`선택한 ${n}개 상품을 삭제하시겠습니까?\n\n${preview}${more}`)) return;
+            allProducts = allProducts.filter(p => !selectedProducts.has(p));
+            selectedProducts.clear();
+            await saveProducts(allProducts);
+            document.getElementById('productCount').textContent = allProducts.length;
+            updateProductsList();
+            alert(`${n}개 상품이 삭제되었습니다`);
         }
         
         // 공통 CSV 다운로드 헬퍼 (file:// 환경 호환)
